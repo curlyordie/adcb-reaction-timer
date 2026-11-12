@@ -33,7 +33,7 @@ The Eid Al Etihad lockup comes from the supplied RGB logo PDF. All 47 unique sup
 
 ## Page editor
 
-Open **Admin → Page editor**. Select a page, search the **Artwork library**, and click **Add element**. Drag an illustration in the frozen preview; drag its bottom-right handle to resize. The element controls also set position, width, rotation, opacity and layer. You can replace its image, duplicate it or remove it. Layouts are independent for each page. Existing inline text, colour, size, visibility, preview, history and publication controls remain.
+Open **Admin → Page editor**. Select a page, search the **Artwork library**, and click **Add element**. Drag an illustration in the frozen preview; drag its bottom-right handle to resize. The element controls also set position, width, rotation, opacity and layer. You can replace its image, duplicate it or remove it. Layouts are independent for each page. Preview size renders a real 1920 × 1080 desktop, 1080 × 1920 event screen, or 390 × 844 mobile viewport, then scales the entire screen to fit the editor without changing its responsive layout. Existing inline text, colour, size, visibility, preview, history and publication controls remain.
 
 Upload PNG/JPEG/WebP images up to 4 MB and 8192 × 8192 pixels. Uploads remain in the design's reusable library. **Save draft** retains private work; **Publish design** shares it with game devices. Draft/history artwork is private. Backups include uploaded images referenced by the design, elements and library. Full backup import is not implemented.
 
