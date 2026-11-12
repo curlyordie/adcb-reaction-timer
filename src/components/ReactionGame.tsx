@@ -1,3 +1,6 @@
+import {DoubleChallenge} from './DoubleChallenge';
+import {DesignElements} from './DesignElements';
+import {evaluateChallenge,passes} from '../../shared/challenge';
 import {validNationality} from '../../shared/countries';
 import {NationalitySelect} from './NationalitySelect';
 import {validEmail} from '../../shared/email';
@@ -44,15 +47,15 @@ const EMPTY_PLAYER: Player = {
 const BRAND = "var(--game-primary)";
 
 const primaryBtn =
-  "text-display w-full rounded-xl px-6 py-5 text-base font-bold tracking-[0.2em] transition-all bg-[#003b71] text-white hover:bg-[#002b52] disabled:bg-neutral-200 disabled:text-neutral-400 disabled:cursor-not-allowed enabled:active:scale-[0.98]";
+  "text-display w-full rounded-xl px-6 py-5 text-base font-bold tracking-[0.2em] transition-all bg-[#333f48] text-white hover:bg-[#202a31] disabled:bg-neutral-200 disabled:text-neutral-400 disabled:cursor-not-allowed enabled:active:scale-[0.98]";
 
 const secondaryBtn =
-  "text-display w-full rounded-xl px-6 py-4 text-sm font-semibold tracking-[0.2em] transition-all bg-white text-[#003b71] border-2 border-[#003b71] hover:bg-[#003b71]/5 active:scale-[0.98]";
+  "text-display w-full rounded-xl px-6 py-4 text-sm font-semibold tracking-[0.2em] transition-all bg-white text-[#333f48] border-2 border-[#333f48] hover:bg-[#333f48]/5 active:scale-[0.98]";
 
 function Logo() {
   return (
     <div className="flex w-full justify-center pt-6 pb-4 select-none">
-      {getSettings().logo ? <img src={assetURL(getSettings().logo)} alt="FAB — First Abu Dhabi Bank" className="h-20 max-w-[70%] object-contain" /> : <div className="fab-wordmark"><strong>FAB<span>◢</span></strong><small>FIRST ABU DHABI BANK</small></div>}
+      {getSettings().logo ? <img src={assetURL(getSettings().logo)} alt="ADCB — Abu Dhabi Commercial Bank" className="adcb-logo" /> : <img src={assetURL('/brand/adcb-logo-66a2316b71.png')} alt="ADCB — Abu Dhabi Commercial Bank" className="adcb-logo" /> }
     </div>
   );
 }
@@ -102,6 +105,8 @@ export function ReactionGame() {
   const loadedPublication=useRef(readStudio().versions.at(-1)!.id);
   const latestPublication=useRef(loadedPublication.current);
   const lastVersionCheck=useRef(Date.now());
+  const [challengeTimes,setChallengeTimes]=useState<number[]>(isPreview?[TARGET_TIME,new URLSearchParams(location.search).get('outcome')==='lose'?TARGET_TIME+1:TARGET_TIME]:[]);
+  const queuedRounds=useRef<number[]>([]);
   const [finalTime, setFinalTime] = useState<number | null>(isPreview ? TARGET_TIME+(new URLSearchParams(location.search).get("outcome")==="lose"?1:0) : null);
   const [lastRecord, setLastRecord] = useState<LeaderboardRecord | null>(null);
 
@@ -127,35 +132,37 @@ export function ReactionGame() {
     setIdle(false);
     if(!isPreview&&(isHosted?latestPublication.current:readStudio().versions.at(-1)!.id)!==loadedPublication.current){location.reload();return;}
     setPlayer(EMPTY_PLAYER);
-    setFinalTime(null);
+    setFinalTime(null);setChallengeTimes([]);
     setLastRecord(null);
     setScreen("home");
     window.scrollTo({top:0,behavior:"auto"});
   };
 
   useEffect(()=>{if(isPreview||!getSettings().autoReturnEnabled||saving||pendingTime!==null)return;let timer:ReturnType<typeof setTimeout>;const timeout=(screen==='playing'?Math.max(getSettings().autoReturnSeconds,TARGET_TIME+10):getSettings().autoReturnSeconds)*1000;const reset=()=>{clearTimeout(timer);timer=setTimeout(()=>{if(!starting.current)goHome();else reset();},timeout);};reset();const events=['pointerdown','pointermove','keydown','input','wheel','scroll'] as const;for(const event of events)window.addEventListener(event,reset,{passive:true,capture:true});return()=>{clearTimeout(timer);for(const event of events)window.removeEventListener(event,reset,true);};},[screen,saving,pendingTime]);
-  async function startGame(){if(starting.current&&screen!=='result')return;starting.current=true;setConnectionError('');setScreen('countdown');const currentFlow=flowId.current;try{await beginRound(player,loadedPublication.current);if(currentFlow!==flowId.current)return;setConnectionError('');}catch(e){if(currentFlow===flowId.current)setConnectionError(e instanceof Error?e.message:'Could not start round.');}finally{starting.current=false;}}
+  async function startGame(){if(starting.current&&screen!=='result')return;starting.current=true;setConnectionError('');setChallengeTimes([]);setScreen(getSettings().gameMode==='double'?'playing':'countdown');const currentFlow=flowId.current;try{await beginRound(player,loadedPublication.current);if(currentFlow!==flowId.current)return;setConnectionError('');}catch(e){if(currentFlow===flowId.current)setConnectionError(e instanceof Error?e.message:'Could not start round.');}finally{starting.current=false;}}
   async function syncBest(){
     if(saveInFlight.current||queuedTime.current===null)return;
-    const t=queuedTime.current,currentFlow=flowId.current;
+    const t=queuedTime.current,roundTimes=[...queuedRounds.current],currentFlow=flowId.current;
     saveInFlight.current=true;setSaving(true);let saved=false;
-    try{const rec=await addLeaderboardRecord({fullName:player.fullName.trim().toUpperCase(),email:player.email.trim(),phoneNumber:player.phoneNumber.trim(),countryCode:player.countryCode,nationality:player.nationality,finalTime:t,difference:t-TARGET_TIME});
+    try{const rec=await addLeaderboardRecord({fullName:player.fullName.trim().toUpperCase(),email:player.email.trim(),phoneNumber:player.phoneNumber.trim(),countryCode:player.countryCode,nationality:player.nationality,finalTime:roundTimes.length?roundTimes.at(-1)!:t,difference:t-TARGET_TIME,...(roundTimes.length?{roundTimes}:{})});
       if(currentFlow!==flowId.current)return;
       setLastRecord(rec);setConnectionError('');saved=true;
       if(queuedTime.current===t){queuedTime.current=null;setPendingTime(null);}
     }catch(e){if(currentFlow===flowId.current)setConnectionError(e instanceof Error?e.message:'Could not save score. Your best result is retained; retry saving below.');}
     finally{saveInFlight.current=false;if(currentFlow===flowId.current){setSaving(false);if(saved&&queuedTime.current!==null)void syncBest();}}
   }
-  function finishRound(t:number){
+  function finishRound(t:number,roundTimes:number[]=[]){
+    const metric=roundTimes.length?TARGET_TIME+evaluateChallenge(roundTimes,TARGET_TIME,TOLERANCE).difference:t;setChallengeTimes(roundTimes);
     if(isHosted&&hostedContent?.eventId==='jiu-jitsu'&&bestDay.current!==dubaiDay()){bestDay.current=dubaiDay();bestTime.current=null;}
     setFinalTime(t);setScreen('result');
-    if(bestTime.current===null||Math.abs(t-TARGET_TIME)<Math.abs(bestTime.current-TARGET_TIME)){bestTime.current=t;queuedTime.current=t;setPendingTime(t);}
+    if(bestTime.current===null||Math.abs(metric-TARGET_TIME)<Math.abs(bestTime.current-TARGET_TIME)){bestTime.current=metric;queuedTime.current=metric;queuedRounds.current=roundTimes;setPendingTime(metric);}
     void syncBest();
   }
   useEffect(()=>{if(pendingTime===null||saving)return;const timer=setTimeout(()=>{void syncBest();},10000);return()=>clearTimeout(timer);},[pendingTime,saving]);
 
   return (
     <div style={{"--game-primary":getSettings().primary,"--game-accent":getSettings().accent,"--game-bg":getSettings().background,"--panel-alpha":1-(getSettings().pageTransparency[screen]??25)/100,backgroundColor:getSettings().background,backgroundImage:getSettings().artwork ? `linear-gradient(#0004,#0004), url(${assetURL(getSettings().artwork)})` : undefined,backgroundSize:"cover",backgroundPosition:"center"} as React.CSSProperties} data-screen={screen} className="game relative flex min-h-screen w-full flex-col items-center overflow-hidden bg-white px-6 pb-10">
+      <DesignElements page={screen}/><div className="etihad-lockup"><img src={assetURL("/brand/eid-al-etihad-80a68cbd8c.png")} alt="Eid Al Etihad"/></div>
       {connectionError&&<p role="alert" className="game-connection-error">{connectionError}</p>}
       {saving&&<p role="status">Saving score to {isHosted?'Cloudflare':'this browser'}…</p>}
       {pendingTime!==null&&!saving&&<button className={primaryBtn} onClick={()=>{void syncBest();}}>Retry saving score</button>}
@@ -182,14 +189,11 @@ export function ReactionGame() {
         {screen === "countdown" && (
           <CountdownScreen onDone={() => setScreen("playing")} />
         )}
-        {screen === "playing" && (
-          <PlayingScreen
-            onStop={(t)=>{void finishRound(t);}}
-          />
-        )}
+        {screen === "playing" && (getSettings().gameMode==='double'?<DoubleChallenge onComplete={times=>finishRound(times.at(-1)!,times)}/>:<PlayingScreen onStop={(t)=>{void finishRound(t);}}/>)}
         {screen === "result" && finalTime !== null && (
           <ResultScreen
             time={finalTime}
+            roundTimes={challengeTimes}
             pending={saving||pendingTime!==null}
             onRetry={()=>{setFinalTime(null);void startGame();}}
             onLeaderboard={() => setScreen("leaderboard")}
@@ -241,7 +245,7 @@ function HomeScreen({
       </div>
 
       <div
-        className="w-full rounded-2xl border-2 border-[#003b71]/40 bg-white p-6"
+        className="w-full rounded-2xl border-2 border-[#333f48]/40 bg-white p-6"
         style={{ boxShadow: "var(--shadow-elegant)" }}
       >
         <div className="flex flex-col gap-4">
@@ -319,7 +323,7 @@ function Field({
         placeholder={placeholder}
         autoCapitalize={autoCapitalize}
         autoComplete="off"
-        className="rounded-lg border border-[#003b71]/50 bg-white px-4 py-3 text-base text-black outline-none focus:border-[#003b71] focus:ring-2 focus:ring-[#003b71]/30"
+        className="rounded-lg border border-[#333f48]/50 bg-white px-4 py-3 text-base text-black outline-none focus:border-[#333f48] focus:ring-2 focus:ring-[#333f48]/30"
       />
     </div>
   );
@@ -339,11 +343,11 @@ function LeaderboardScreen({
   const [rows,setRows]=useState(()=>getLeaderboard().slice(0,20));
   const [error,setError]=useState('');
   const [refreshing,setRefreshing]=useState(false);
-  useEffect(()=>{let cancelled=false,running=false;let loadedDay=dubaiDay();const update=async()=>{if(running)return;running=true;setRefreshing(true);try{const rows=await refreshLeaderboard();if(!cancelled){setRows(rows.slice(0,20));setError('');loadedDay=dubaiDay();}}catch(e){if(!cancelled)setError(e instanceof Error?e.message:'Could not load leaderboard.');}finally{running=false;if(!cancelled)setRefreshing(false);}};void update();const daily=isHosted&&!isPreview&&hostedContent?.eventId==='jiu-jitsu';let midnight:ReturnType<typeof setTimeout>;const schedule=()=>{midnight=setTimeout(()=>{setRows(rows=>rows.slice(0,3));if(!document.hidden)void update();schedule();},Math.max(1,nextDubaiMidnight()-Date.now()+25));};if(daily)schedule();const visible=()=>{if(daily&&!document.hidden&&loadedDay!==dubaiDay())void update();};const refresh=()=>{void update();};window.addEventListener('fab-score-saved',refresh);window.addEventListener('fab-leaderboard-refresh',refresh);document.addEventListener('visibilitychange',visible);return()=>{cancelled=true;clearTimeout(midnight);window.removeEventListener('fab-score-saved',refresh);window.removeEventListener('fab-leaderboard-refresh',refresh);document.removeEventListener('visibilitychange',visible);};},[]);
+  useEffect(()=>{let cancelled=false,running=false;let loadedDay=dubaiDay();const update=async()=>{if(running)return;running=true;setRefreshing(true);try{const rows=await refreshLeaderboard();if(!cancelled){setRows(rows.slice(0,20));setError('');loadedDay=dubaiDay();}}catch(e){if(!cancelled)setError(e instanceof Error?e.message:'Could not load leaderboard.');}finally{running=false;if(!cancelled)setRefreshing(false);}};void update();const daily=isHosted&&!isPreview&&hostedContent?.eventId==='jiu-jitsu';let midnight:ReturnType<typeof setTimeout>;const schedule=()=>{midnight=setTimeout(()=>{setRows(rows=>rows.slice(0,3));if(!document.hidden)void update();schedule();},Math.max(1,nextDubaiMidnight()-Date.now()+25));};if(daily)schedule();const visible=()=>{if(daily&&!document.hidden&&loadedDay!==dubaiDay())void update();};const refresh=()=>{void update();};window.addEventListener('adcb-score-saved',refresh);window.addEventListener('adcb-leaderboard-refresh',refresh);document.addEventListener('visibilitychange',visible);return()=>{cancelled=true;clearTimeout(midnight);window.removeEventListener('adcb-score-saved',refresh);window.removeEventListener('adcb-leaderboard-refresh',refresh);document.removeEventListener('visibilitychange',visible);};},[]);
 
   return (
     <div className="leaderboard-screen flex w-full flex-col gap-6">
-      {isHosted&&!isPreview&&<button className={secondaryBtn} disabled={refreshing} onClick={()=>window.dispatchEvent(new Event('fab-leaderboard-refresh'))}>{refreshing?'Refreshing leaderboard…':'Refresh leaderboard'}</button>}
+      {isHosted&&!isPreview&&<button className={secondaryBtn} disabled={refreshing} onClick={()=>window.dispatchEvent(new Event('adcb-leaderboard-refresh'))}>{refreshing?'Refreshing leaderboard…':'Refresh leaderboard'}</button>}
       {error&&<p role="alert">{error}</p>}
       <div className="text-center">
         <h1 className="text-display text-3xl font-black" style={{ color: BRAND }}>{<CampaignText page="leaderboard" name="leaderboardTitle">{copy("leaderboardTitle")}</CampaignText>}</h1>
@@ -353,7 +357,7 @@ function LeaderboardScreen({
       </div>
 
       <div
-        className="overflow-hidden rounded-2xl border-2 border-[#003b71]/40 bg-white"
+        className="overflow-hidden rounded-2xl border-2 border-[#333f48]/40 bg-white"
         style={{ boxShadow: "var(--shadow-elegant)" }}
       >
         {rows.length === 0 ? (
@@ -364,11 +368,11 @@ function LeaderboardScreen({
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-[2rem_minmax(0,1fr)_3rem_auto] gap-2 border-b border-[#003b71]/30 px-4 py-3 text-[9px] tracking-[0.25em] text-neutral-600 text-display">
+            <div className="grid grid-cols-[2rem_minmax(0,1fr)_3rem_auto] gap-2 border-b border-[#333f48]/30 px-4 py-3 text-[9px] tracking-[0.25em] text-neutral-600 text-display">
               <div>#</div>
               <div>NAME</div>
               <div>CC</div>
-              <div className="text-right">DIFF</div>
+              <div className="text-right">MAX ERROR</div>
             </div>
             <div className="leaderboard-scroll overflow-y-auto">
               {rows.map((r, i) => {
@@ -377,14 +381,14 @@ function LeaderboardScreen({
                   <div
                     key={r.id}
                     className={`grid grid-cols-[2rem_minmax(0,1fr)_3rem_auto] items-center gap-2 border-b border-neutral-100 px-4 py-3 text-xs ${
-                      highlight ? "bg-[#003b71]/10" : ""
+                      highlight ? "bg-[#333f48]/10" : ""
                     }`}
                   >
                     <div className="text-display font-bold" style={{ color: BRAND }}>{i + 1}</div>
                     <div className="min-w-0">
                       <div className="text-display truncate text-sm font-semibold text-black">{r.fullName}</div>
                       <div className="text-mono text-[10px] text-neutral-500">
-                        {formatTime(r.finalTime)}
+                        {r.roundTimes?r.roundTimes.map(formatTime).join(" + "):formatTime(r.finalTime)}
                       </div>
                     </div>
                     <div className="text-mono text-[11px] text-neutral-500">{r.countryCode}</div>
@@ -500,6 +504,7 @@ function PlayingScreen({ onStop }: { onStop: (t: number) => void }) {
 /* -------------------- RESULT -------------------- */
 
 function ResultScreen({
+  roundTimes=[],
   pending=false,
   onRetry,
   time,
@@ -507,17 +512,18 @@ function ResultScreen({
   onHome,
 }: {
   time: number;
+  roundTimes?:number[];
   pending?:boolean;
   onRetry:()=>void;
   onLeaderboard: () => void;
   onHome: () => void;
 }) {
   const diff = time - TARGET_TIME;
-  const win = Math.abs(diff) <= TOLERANCE;
+  const win = getSettings().gameMode==='double'?roundTimes.length===2&&roundTimes.every(t=>passes(t,TARGET_TIME,TOLERANCE)):Math.abs(diff)<=TOLERANCE;
 
   return (
     <div
-      className="result-panel flex w-full flex-col items-center gap-6 rounded-2xl border-2 border-[#003b71]/40 bg-white p-6 text-center"
+      className="result-panel flex w-full flex-col items-center gap-6 rounded-2xl border-2 border-[#333f48]/40 bg-white p-6 text-center"
       style={{ boxShadow: "var(--shadow-elegant)" }}
     >
       {getSettings().resultArtwork&&<Decoration page="result" name="resultArtwork"><img className="result-artwork" src={assetURL(getSettings().resultArtwork)} alt="Result artwork"/></Decoration>}
@@ -525,16 +531,17 @@ function ResultScreen({
         <CampaignText page="result" name={win?"winner":"retry"}>{win ? copy("winner") : copy("retry")}</CampaignText>
       </div>
 
+      {getSettings().gameMode==='double'&&<div className="result-timers" aria-label="Challenge results">{[0,1].map(index=><article key={index}><span>ROUND 0{index+1}</span><DigitalStopwatch time={roundTimes[index]??0}/><strong>{roundTimes[index]===undefined?'NOT PLAYED':passes(roundTimes[index],TARGET_TIME,TOLERANCE)?'PASS':'MISSED'}</strong></article>)}</div>}
       <div
         className="text-mono text-[clamp(2.5rem,14vw,5rem)] font-black leading-none tabular-nums"
         style={{ color: BRAND }}
       >
-        {formatTime(time)}
+        {getSettings().gameMode==='double'?(win?'55':'TRY AGAIN'):formatTime(time)}
       </div>
 
-      <div className="flex w-full flex-col gap-2 rounded-xl border border-[#003b71]/30 bg-white p-4">
+      <div className="flex w-full flex-col gap-2 rounded-xl border border-[#333f48]/30 bg-white p-4">
         <Row label="TARGET" value={TARGET_TIME.toFixed(3)} />
-        <Row label="DIFFERENCE" value={`${formatDiff(diff)} SECONDS`} highlight />
+        <Row label={getSettings().gameMode==='double'?"WINNING RANGE":"DIFFERENCE"} value={getSettings().gameMode==='double'?`${(TARGET_TIME-TOLERANCE).toFixed(3)} – ${(TARGET_TIME+TOLERANCE).toFixed(3)}`:`${formatDiff(diff)} SECONDS`} highlight />
       </div>
 
       <div className="flex w-full flex-col gap-2">
@@ -603,6 +610,6 @@ function IdlePresentation(){
  {page==='home'&&<HomeScreen keyboardEnabled={false} player={{...EMPTY_PLAYER,fullName:'ALEX EXAMPLE',email:'demo@example.invalid',nationality:'AE'}} setPlayer={noop} onStart={noop} onLeaderboard={noop}/>}
  {page==='countdown'&&<CountdownScreen onDone={noop}/>}
  {page==='playing'&&<div className="playing-screen"><DigitalStopwatch time={Math.max(0,TARGET_TIME-2)}/><ArcadeButton onClick={noop} label={copy('stop')}/></div>}
- {page==='result'&&<ResultScreen time={TARGET_TIME} onRetry={noop} onLeaderboard={noop} onHome={noop}/>}
+ {page==='result'&&<ResultScreen time={TARGET_TIME} roundTimes={[TARGET_TIME,TARGET_TIME]} onRetry={noop} onLeaderboard={noop} onHome={noop}/>}
  </div></fieldset><div className="idle-prompt">{copy('idleEnter')} · Example only</div></div>;
 }

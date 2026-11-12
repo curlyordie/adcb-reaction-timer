@@ -1,5 +1,5 @@
 {
-  "name": "fab-reaction-timer",
+  "name": "adcb-reaction-timer",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -7,8 +7,8 @@
     "dev": "vite --host 0.0.0.0",
     "build": "tsc --noEmit && tsc -p tsconfig.cloudflare.json && vite build && node scripts/standalone.mjs",
     "preview": "vite preview --host 0.0.0.0",
-    "test": "node --test tests/*.test.mjs",
-    "test:cloud": "node --import tsx --test tests/cloud*.test.ts"
+    "test": "node --test tests/adcb*.test.mjs",
+    "test:cloud": "node --import tsx --test tests/adcb*.test.ts tests/cloud-health.test.ts tests/cloud-schema.test.ts tests/game-pause.test.ts"
   },
   "dependencies": {
     "image-size": "^2.0.4",

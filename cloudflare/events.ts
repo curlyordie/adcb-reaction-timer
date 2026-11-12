@@ -1,7 +1,7 @@
-import {normalize} from '../shared/domain';
+import {baseline,original,normalize} from '../shared/domain';
 import {HttpError} from './auth';
 
-export const eventProfiles=[{id:'f1',name:'F1 · 2–3 November 2026'},{id:'jiu-jitsu',name:'Jiu jitsu'}] as const;
+export const eventProfiles=[{id:'aaihex-2026',name:'AAIHEX 2026'}] as const;
 export function eventId(value:unknown){if(!eventProfiles.some(event=>event.id===value))throw new HttpError(400,'Choose a valid event.');return value as string;}
 type DatabaseEnv={DB:D1Database};
 const initialized=new WeakMap<D1Database,Promise<void>>();
@@ -10,12 +10,12 @@ export async function initializeEvents(env:DatabaseEnv){
  let pending=initialized.get(env.DB);
  if(!pending){pending=(async()=>{
   await env.DB.batch([
-   env.DB.prepare("INSERT OR IGNORE INTO daily_scores(event_id,day,score_id,data,difference,completed_at) SELECT 'jiu-jitsu',date(completed_at,'+4 hours'),id,data,difference,completed_at FROM records WHERE json_extract(data,'$.eventId')='jiu-jitsu'"),
-   env.DB.prepare("INSERT OR IGNORE INTO event_profiles(id,name,revision,draft,active_id) SELECT 'f1',?,revision,draft,active_id FROM studio WHERE id=1").bind(eventProfiles[0].name),
-   env.DB.prepare("INSERT OR IGNORE INTO design_versions(id,settings,reason,created_at) SELECT 'jiu-jitsu-initial-v1',json_set(v.settings,'$.eventName','Jiu jitsu'),'Initial jiu jitsu profile',? FROM event_profiles e JOIN design_versions v ON v.id=e.active_id WHERE e.id='f1'").bind(new Date().toISOString()),
-   env.DB.prepare("INSERT OR IGNORE INTO event_design_versions(version_id,event_id) VALUES('jiu-jitsu-initial-v1','jiu-jitsu')"),
-   env.DB.prepare("INSERT OR IGNORE INTO event_profiles(id,name,revision,draft,active_id) SELECT 'jiu-jitsu',?,0,settings,id FROM design_versions WHERE id='jiu-jitsu-initial-v1'").bind(eventProfiles[1].name),
-   env.DB.prepare("INSERT OR IGNORE INTO game_event_state(id,active_event_id,revision) VALUES(1,'f1',0)")
+   env.DB.prepare('INSERT OR IGNORE INTO design_versions(id,settings,reason,created_at) VALUES(?,?,?,?)').bind(original.id,JSON.stringify(baseline),original.reason,new Date().toISOString()),
+   env.DB.prepare('INSERT OR IGNORE INTO event_design_versions(version_id,event_id) VALUES(?,?)').bind(original.id,'aaihex-2026'),
+   env.DB.prepare('INSERT OR IGNORE INTO event_profiles(id,name,revision,draft,active_id) VALUES(?,?,0,?,?)').bind('aaihex-2026','AAIHEX 2026',JSON.stringify(baseline),original.id),
+   env.DB.prepare("INSERT OR IGNORE INTO game_event_state(id,active_event_id,revision) VALUES(1,'aaihex-2026',0)"),
+   // This independent ADCB deployment keeps legacy rows but never makes the old projects live.
+   env.DB.prepare("UPDATE game_event_state SET active_event_id='aaihex-2026',revision=revision+1 WHERE id=1 AND active_event_id IN ('f1','jiu-jitsu')")
   ]);
  })();initialized.set(env.DB,pending);}
  try{await pending;}catch(error){initialized.delete(env.DB);throw error;}

@@ -8,7 +8,7 @@ type Result={day:string;records:Row[];leaderboard:Row[]};
 const date=(value:string)=>new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Dubai',dateStyle:'medium',timeStyle:'short'}).format(new Date(value));
 function exportCSV(day:string,kind:string,rows:Row[]){
  const csv=[[kind==='leaderboard'?'Rank':'Row','Name','Email','Nationality','Phone','Time (seconds)','Target','Difference','Qualified','Completed (Dubai)','Carried from earlier day','Score ID','Tolerance','Event'],...rows.map((r,i)=>[i+1,r.fullName,r.email,nationalityName(r.nationality),r.countryCode+' '+r.phoneNumber,r.finalTime,r.target,r.difference,r.qualified,date(r.timestamp),r.carried?'Yes':'No',r.id,r.tolerance,'jiu-jitsu'])].map(row=>row.map(v=>'"'+String(v).replace(/^[=+@\-]/,"'$&").replaceAll('"','""')+'"').join(',')).join('\r\n');
- const url=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv'}));const a=document.createElement('a');a.href=url;a.download='fab-jiu-jitsu-'+day+'-'+kind+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ const url=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv'}));const a=document.createElement('a');a.href=url;a.download='adcb-jiu-jitsu-'+day+'-'+kind+'.csv';a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 export function DailyResults(){
  const [refresh,setRefresh]=useState(0);

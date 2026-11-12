@@ -1,3 +1,4 @@
+import {evaluateChallenge} from '../../shared/challenge';
 import {dubaiDay} from '../../shared/event-day';
 import {isHosted,hostedContent,api} from "./runtime";
 import { getSettings, load, save, isPreview } from "./settings";
@@ -5,6 +6,7 @@ export let TARGET_TIME = getSettings().target;
 export let TOLERANCE = getSettings().tolerance;
 
 export interface LeaderboardRecord {
+  roundTimes?:number[];
   nationality?:string;
   id: string;
   fullName: string;
@@ -30,34 +32,34 @@ export const COUNTRY_CODES = [
   { code: "+81", label: "JAPAN" },
 ];
 
-let store: LeaderboardRecord[] = isPreview || isHosted ? [] : load("fab-records", []);
+let store: LeaderboardRecord[] = isPreview || isHosted ? [] : load("adcb-records", []);
 
 export function getLeaderboard(): LeaderboardRecord[] {
-  if (!isPreview && !isHosted) store = load("fab-records", []);
+  if (!isPreview && !isHosted) store = load("adcb-records", []);
   return [...store].sort((a, b) => Math.abs(a.difference) - Math.abs(b.difference));
 }
 
 export async function addLeaderboardRecord(rec: Omit<LeaderboardRecord, "id" | "timestamp" | "target" | "tolerance" | "qualified">): Promise<LeaderboardRecord> {
   if(sequenceBest&&(!(isHosted&&hostedContent?.eventId==='jiu-jitsu')||dubaiDay(Date.parse(sequenceBest.timestamp))===dubaiDay())&&Math.abs(sequenceBest.difference)<=Math.abs(rec.difference))return sequenceBest;
-  if(isHosted&&!isPreview){if(!round&&roundReady)await roundReady;if(!round&&roundRequest)await beginRound(roundRequest.player,roundRequest.versionId);if(!round)throw Error("Start a new round before saving.");const saved=await api<LeaderboardRecord>("public/complete",{...round,finalTime:rec.finalTime});sequenceBest=saved;window.dispatchEvent(new Event('fab-score-saved'));return saved;}
+  if(isHosted&&!isPreview){if(!round&&roundReady)await roundReady;if(!round&&roundRequest)await beginRound(roundRequest.player,roundRequest.versionId);if(!round)throw Error("Start a new round before saving.");const saved=await api<LeaderboardRecord>("public/complete",{...round,finalTime:rec.finalTime,roundTimes:rec.roundTimes});sequenceBest=saved;window.dispatchEvent(new Event('adcb-score-saved'));return saved;}
   const full: LeaderboardRecord = {
     ...rec,
-    target: TARGET_TIME, tolerance: TOLERANCE, qualified: Math.abs(rec.difference) <= TOLERANCE,
+    target: TARGET_TIME, tolerance: TOLERANCE, qualified: getSettings().gameMode==='double'?evaluateChallenge(rec.roundTimes??[],TARGET_TIME,TOLERANCE).qualified:Math.abs(rec.difference)<=TOLERANCE,
     id: sequenceId,
     timestamp: new Date().toISOString(),
   };
-  if (!isPreview) store = load("fab-records", []);
+  if (!isPreview) store = load("adcb-records", []);
   const existing=store.find(record=>record.id===sequenceId);
   if(existing&&Math.abs(existing.difference)<=Math.abs(full.difference))return existing;
   store=[...store.filter(record=>record.id!==sequenceId),full];
-  if(!isPreview)save("fab-records",store);
+  if(!isPreview)save("adcb-records",store);
 
   sequenceBest=full;
   return full;
 }
 
 export function formatTime(t: number): string {
-  return t.toFixed(3).padStart(6, "0");
+  return t.toFixed(3);
 }
 
 export function formatDiff(diff: number): string {
