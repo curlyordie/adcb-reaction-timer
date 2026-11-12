@@ -33,7 +33,7 @@ The Eid Al Etihad lockup comes from the supplied RGB logo PDF. The downloadable 
 
 ## Page editor
 
-Open **Admin → Page editor**. Select a page, choose an **Artwork category**, search the **Artwork library**, and click **Add element**. Drag an illustration in the frozen preview; drag its bottom-right handle to resize. The element controls also set position, width, rotation, opacity and layer. You can replace its image, duplicate it or remove it. Layouts are independent for each page. Preview size renders a real 1920 × 1080 desktop, 1080 × 1920 event screen, or 390 × 844 mobile viewport, then scales the entire screen to fit the editor without changing its responsive layout. Existing inline text, colour, size, visibility, preview, history and publication controls remain.
+Open **Admin → Page editor**. Select a page, choose an **Artwork category**, search the **Artwork library**, and click **Add element**. Drag an illustration in the frozen preview; drag its bottom-right handle to resize. The element controls also set position, width, rotation, opacity and layer. You can replace its image, duplicate it or remove it. Layouts are independent for each page. The shared design format is portrait (1080 × 1920) or landscape (1920 × 1080). Publish one format for all devices. Text, artwork, timers and controls use that logical canvas; device dimensions only change its proportional scale. Different screen ratios show extra background space rather than cropping or stretching the composition. Long content extends the logical page and the complete page scales to fit. Preview size simulates desktop, event-screen and mobile device viewports through the same live canvas renderer, so preview and live positions match. Artwork dragging accounts for both preview and canvas scaling. Existing inline text, colour, size, visibility, preview, history and publication controls remain.
 
 Upload PNG/JPEG/WebP images up to 4 MB and 8192 × 8192 pixels. Uploads remain in the design's reusable library. **Save draft** retains private work; **Publish design** shares it with game devices. Draft/history artwork is private. Backups include uploaded images referenced by the design, elements and library. Full backup import is not implemented.
 
@@ -42,3 +42,7 @@ Moving or resizing an existing image sends layout JSON when saving/publishing, n
 ## Cloudflare deployment
 
 See [the ADCB setup guide](docs/cloudflare-setup.md). Use a **separate Pages project and separate D1 database** from FAB. Only AAIHEX 2026 is shown in the event selector. Existing legacy database rows are retained; the ADCB profile is initialized separately and made live. No production resources are created, reset or deployed by local builds or tests.
+
+## Publishing across devices
+
+Use **Publish design** (or Publish settings) to share amendments; Save draft retains private work. A newly opened game loads the published design. Connected, visible home screens check a tiny version endpoint about every three minutes and reload when a new version is available; refresh a device for immediate application. Active games and retry sequences retain their captured design until returning home, so a publication cannot change the target or difficulty mid-game. No per-device layout edits are needed.

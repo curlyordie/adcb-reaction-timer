@@ -76,9 +76,9 @@ function ArcadeButton({
         disabled={disabled}
         className="arcade-btn text-display flex items-center justify-center text-center font-black tracking-[0.18em] text-white"
         style={{
-          width: "min(70vw, 240px)",
-          height: "min(70vw, 240px)",
-          fontSize: "clamp(1.1rem, 5vw, 1.6rem)",
+          width: "min(calc(var(--canvas-vw) * 70), 240px)",
+          height: "min(calc(var(--canvas-vw) * 70), 240px)",
+          fontSize: "clamp(1.1rem, calc(var(--canvas-vw) * 5), 1.6rem)",
           lineHeight: 1.05,
         }}
       >
@@ -225,7 +225,7 @@ function HomeScreen({
   const [keyboardField,setKeyboardField]=useState<'fullName'|'email'|'phoneNumber'|null>(null);
   const inputs=useRef<Record<string,HTMLInputElement|null>>({});
   const openKeyboard=(field:'fullName'|'email'|'phoneNumber')=>{if(isFrozen||!keyboardEnabled)return;setKeyboardField(field);};
-  useEffect(()=>{if(!keyboardField)return;const frame=requestAnimationFrame(()=>inputs.current[keyboardField]?.scrollIntoView({block:'center',behavior:'auto'}));return()=>cancelAnimationFrame(frame);},[keyboardField]);
+
   useEffect(()=>{if(!keyboardEnabled)setKeyboardField(null);},[keyboardEnabled]);
   const closeKeyboard=()=>{if(keyboardField)inputs.current[keyboardField]?.blur();setKeyboardField(null);};
   useEffect(()=>{let startedInside=false;const inside=(event:MouseEvent)=>event.composedPath().some(node=>node instanceof HTMLElement&&node.matches('.touch-keyboard,[data-registration-input]'));const pointer=(event:PointerEvent)=>{startedInside=inside(event);};const outside=(event:MouseEvent)=>{if(!startedInside&&!inside(event))setKeyboardField(null);};const escape=(event:KeyboardEvent)=>{if(event.key==='Escape')setKeyboardField(null);};document.addEventListener('pointerdown',pointer);document.addEventListener('click',outside);window.addEventListener('keydown',escape);return()=>{document.removeEventListener('pointerdown',pointer);document.removeEventListener('click',outside);window.removeEventListener('keydown',escape);};},[]);
@@ -236,7 +236,7 @@ function HomeScreen({
   return (
     <div className="flex w-full flex-col items-center gap-8" style={{paddingBottom:keyboardField?360:undefined}}>
       <div className="text-center">
-        <h1 className="text-display text-4xl sm:text-5xl font-black leading-[1.05]" style={{ color: BRAND }}>
+        <h1 className="text-display home-headline font-black leading-[1.05]" style={{ color: BRAND }}>
           <CampaignText page="home" name="title">{getSettings().title}</CampaignText>
         </h1>
         <p className="mt-4 text-xs tracking-[0.3em] text-neutral-600 text-display">
@@ -533,7 +533,7 @@ function ResultScreen({
 
       {getSettings().gameMode==='double'&&<div className="result-timers" aria-label="Challenge results">{[0,1].map(index=><article key={index}><span>ROUND 0{index+1}</span><DigitalStopwatch time={roundTimes[index]??0}/><strong>{roundTimes[index]===undefined?'NOT PLAYED':passes(roundTimes[index],TARGET_TIME,TOLERANCE)?'PASS':'MISSED'}</strong></article>)}</div>}
       <div
-        className="text-mono text-[clamp(2.5rem,14vw,5rem)] font-black leading-none tabular-nums"
+        className="text-mono result-number font-black leading-none tabular-nums"
         style={{ color: BRAND }}
       >
         {getSettings().gameMode==='double'?(win?'55':'TRY AGAIN'):formatTime(time)}

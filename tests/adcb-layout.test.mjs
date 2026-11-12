@@ -1,0 +1,35 @@
+import {test,before,after} from 'node:test';
+import assert from 'node:assert/strict';
+import {chromium} from '@playwright/test';
+import {readFile} from 'node:fs/promises';
+import {createServer} from 'node:http';
+let browser,server,url;
+before(async()=>{const html=await readFile('adcb-reaction-timer.html');server=createServer((req,res)=>{res.setHeader('Content-Type','text/html');res.end(html);});await new Promise(r=>server.listen(0,'127.0.0.1',r));url='http://127.0.0.1:'+server.address().port+'/';browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',args:['--no-sandbox']});});
+after(async()=>{await browser?.close();await new Promise(r=>server?.close(r));});
+async function settle(target){await target.locator('.game').waitFor();await target.locator('body').evaluate(async()=>{await document.fonts.ready;await Promise.all(Array.from(document.images).map(im=>im.decode().catch(()=>{})));await new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)));});}
+async function measure(target,selectors){await settle(target);return target.locator('.game').evaluate((game,selectors)=>{const root=game.getBoundingClientRect();return {logical:{width:game.offsetWidth,height:game.offsetHeight},fits:root.left>=-.5&&root.top>=-.5&&root.right<=innerWidth+.5&&root.bottom<=innerHeight+.5,items:selectors.map(selector=>{const el=document.querySelector(selector);if(!el)throw Error('Missing '+selector);const box=el.getBoundingClientRect();return {x:(box.left-root.left)/root.width,y:(box.top-root.top)/root.height,width:box.width/root.width,height:box.height/root.height,font:getComputedStyle(el).fontSize};})};},selectors);}
+function sameComposition(actual,expected){assert.deepEqual(actual.logical,expected.logical);assert.equal(actual.fits,true,'The whole canvas must fit the display');for(let i=0;i<actual.items.length;i++){assert.equal(actual.items[i].font,expected.items[i].font);for(const key of ['x','y','width','height'])assert.ok(Math.abs(actual.items[i][key]-expected.items[i][key])<.001,`Element ${i} ${key}: ${actual.items[i][key]} vs ${expected.items[i][key]}`);}}
+async function publish(editor,note){await editor.getByLabel('Change note',{exact:true}).fill(note);await editor.getByRole('button',{name:'Publish design',exact:true}).click();await editor.getByRole('status').filter({hasText:'Published on this browser.'}).waitFor();}
+
+test('published text, logos and positioned artwork keep the same composition in previews and every live device',async()=>{
+ const context=await browser.newContext({viewport:{width:1440,height:1000}});try{
+ const editor=await context.newPage();await editor.goto(url+'admin');await editor.getByRole('button',{name:'Page editor',exact:true}).click();await editor.getByLabel('Shared design format').selectOption('landscape');await editor.getByLabel('Page headline').fill('ALL DEVICES. ONE SHARED DESIGN.');await editor.getByLabel('Text element',{exact:true}).selectOption('title');await editor.getByLabel('Font size',{exact:true}).fill('64');await editor.getByLabel('Find artwork').fill('Falcon 01');await editor.getByRole('button',{name:'Add element Fauna Falcon 01',exact:true}).click();await editor.getByLabel('Left (%)').fill('5');await editor.getByLabel('Top (%)').fill('72');await editor.getByLabel('Width (%)').fill('14');await editor.getByLabel('Rotation',{exact:true}).fill('11');await publish(editor,'One shared landscape');
+ const id=await editor.getByLabel('Page artwork').inputValue();const selectors=['.home-headline','.adcb-logo','input[placeholder="ENTER FULL NAME"]','[data-design-id="'+id+'"]'];
+ const live=await context.newPage();await live.setViewportSize({width:1920,height:1080});await live.goto(url);let expected=await measure(live,selectors);assert.deepEqual(expected.logical,{width:1920,height:1080});
+ const sizes=[{width:390,height:844},{width:667,height:375},{width:768,height:1024},{width:1366,height:768},{width:1080,height:1920},{width:3840,height:2160}];
+ for(const size of sizes){await live.setViewportSize(size);sameComposition(await measure(live,selectors),expected);}
+ for(const preset of ['mobile','desktop','portrait']){await editor.getByLabel('Preview size').selectOption(preset);sameComposition(await measure(editor.frameLocator('iframe[title="Live page preview"]'),selectors),expected);}
+ await editor.getByLabel('Shared design format').selectOption('portrait');await publish(editor,'One shared portrait');await live.goto(url);expected=await measure(live,selectors);assert.deepEqual(expected.logical,{width:1080,height:1920});
+ for(const size of sizes){await live.setViewportSize(size);sameComposition(await measure(live,selectors),expected);}
+ await editor.getByLabel('Preview size').selectOption('desktop');sameComposition(await measure(editor.frameLocator('iframe[title="Live page preview"]'),selectors),expected);
+ // Both timer cards use the same canvas after registration too.
+ await live.getByPlaceholder('ENTER FULL NAME').fill('Consistent Player');await live.getByRole('checkbox').check();await live.getByRole('button',{name:'START GAME',exact:true}).click();await live.getByRole('button',{name:'START GAME',exact:true}).click();await live.getByRole('timer').first().waitFor();const timers=['.timer-card:first-child','.timer-card:last-child','.timer-action'];expected=await measure(live,timers);for(const size of sizes.slice(0,4)){await live.setViewportSize(size);sameComposition(await measure(live,timers),expected);}
+ await live.screenshot({path:'/tmp/adcb-shared-device.png',fullPage:true});
+ }finally{await context.close();}
+});
+test('long published content expands the shared page and scales to fit without a device cropping it',async()=>{
+ const context=await browser.newContext({viewport:{width:1440,height:1000}});try{const editor=await context.newPage();await editor.goto(url+'admin');await editor.getByRole('button',{name:'Page editor',exact:true}).click();await editor.getByLabel('Page',{exact:true}).selectOption('instructions');await editor.getByLabel('Instructions (one step per line)').fill('Five seconds, twice. '.repeat(70));await editor.getByLabel('Text element',{exact:true}).selectOption('instructions');await editor.getByLabel('Font size',{exact:true}).fill('72');await publish(editor,'Long instructions fit');
+ const live=await context.newPage();await live.goto(url);await live.getByPlaceholder('ENTER FULL NAME').fill('Long Copy Player');await live.getByRole('checkbox').check();await live.getByRole('button',{name:'START GAME',exact:true}).click();await live.getByRole('heading',{name:'HOW TO PLAY',exact:true}).waitFor();const selectors=['.game-stage','button'];let expected=await measure(live,selectors);assert.ok(expected.logical.height>1920,'Long content must increase the logical height instead of being clipped');
+ for(const size of [{width:390,height:844},{width:1920,height:1080},{width:1080,height:1920}]){await live.setViewportSize(size);sameComposition(await measure(live,selectors),expected);}
+ }finally{await context.close();}
+});
