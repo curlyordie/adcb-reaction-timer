@@ -1,0 +1,81 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {Miniflare} from 'miniflare';
+import {chromium} from '@playwright/test';
+import {createServer} from 'node:http';
+import {readFile} from 'node:fs/promises';
+import {resolve} from 'node:path';
+import {dubaiDay} from '../shared/event-day';
+import {handleApi} from '../cloudflare/backend';
+
+test('Admin can prepare and activate jiu jitsu while viewing and exporting preserved F1 data independently',async()=>{
+ const mf=new Miniflare({modules:true,script:'export default {fetch(){return new Response("test")}}',compatibilityDate:'2026-08-01',d1Databases:['DB']});
+ const env:any={DB:await mf.getD1Database('DB'),ADMIN_PASSWORD:'event-ui-password-not-for-production'};
+ await handleApi(new Request('https://fab.example/api/public/content'),env);
+ const record={id:crypto.randomUUID(),fullName:'Preserved F1 Player',email:'',countryCode:'',phoneNumber:'',timestamp:'2026-11-02T12:00:00Z',finalTime:9.9,difference:-.1,target:10,tolerance:.005,qualified:false};
+ await env.DB.prepare('CREATE TABLE records_backup_20261103 AS SELECT * FROM records').run();
+ await env.DB.prepare('INSERT INTO records_backup_20261103(seq,id,data,difference,completed_at) VALUES(1,?,?,?,?)').bind(record.id,JSON.stringify(record),record.difference,record.timestamp).run();
+ const server=createServer(async(req,res)=>{try{
+  const url=new URL(req.url!,'http://127.0.0.1:'+(server.address() as any).port);
+  if(url.pathname.startsWith('/api/')){const chunks=[];for await(const chunk of req)chunks.push(chunk);const response=await handleApi(new Request(url,{method:req.method,headers:new Headers(req.headers as any),body:req.method==='GET'?undefined:Buffer.concat(chunks)}),env);res.writeHead(response.status,Object.fromEntries(response.headers));res.end(Buffer.from(await response.arrayBuffer()));return;}
+  const path=(url.pathname.startsWith('/assets/')||url.pathname.startsWith('/flags/'))?resolve('dist','.'+url.pathname):resolve('dist/index.html');res.setHeader('Content-Type',path.endsWith('.js')?'application/javascript':path.endsWith('.css')?'text/css':path.endsWith('.svg')?'image/svg+xml':'text/html');res.end(await readFile(path));
+ }catch(error){res.writeHead(500).end();}});
+ await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));
+ const browser=await chromium.launch({executablePath:process.env.CHROMIUM_PATH||'/usr/bin/chromium',args:['--no-sandbox']});
+ try{
+  const site='http://127.0.0.1:'+(server.address() as any).port;
+  const admin=await browser.newPage({viewport:{width:1280,height:1000}});const game=await browser.newPage();const errors:string[]=[];
+  admin.on('pageerror',error=>errors.push(error.message));game.on('pageerror',error=>errors.push(error.message));
+  await admin.goto(site+'/admin');await admin.getByLabel('Password',{exact:true}).fill(env.ADMIN_PASSWORD);await admin.getByRole('button',{name:'Sign in',exact:true}).click();
+  await admin.getByLabel('Event to manage',{exact:true}).waitFor();await game.goto(site);await game.getByRole('heading',{name:'TEST YOUR REACTION TIME',exact:true}).waitFor();
+  await admin.getByRole('button',{name:'View this event’s saved results',exact:true}).click();await admin.getByRole('button',{name:'2 November 2026',exact:true}).click();
+  await admin.getByRole('table',{name:'Admin leaderboard'}).getByText('Preserved F1 Player',{exact:true}).waitFor();
+  const csvPromise=admin.waitForEvent('download');await admin.getByRole('button',{name:'Export 2026-11-02 CSV',exact:true}).click();const csv=await csvPromise;
+  assert.equal(csv.suggestedFilename(),'fab-f1-leaderboard-2026-11-02.csv');assert.match(await readFile((await csv.path())!,'utf8'),/Preserved F1 Player/);
+  await admin.getByRole('button',{name:'Backup',exact:true}).click();const backupPromise=admin.waitForEvent('download');await admin.getByRole('button',{name:'Download private backup',exact:true}).click();const backup=await backupPromise;
+  const data=JSON.parse(await readFile((await backup.path())!,'utf8'));assert.equal(data.eventId,'f1');assert.equal(data.records.length,1);assert.equal(data.records[0].id,record.id);
+  await admin.getByLabel('Event to manage',{exact:true}).selectOption('jiu-jitsu');await admin.getByRole('status').filter({hasText:'Managing Jiu jitsu'}).waitFor();
+  await admin.getByRole('button',{name:'Settings',exact:true}).click();await admin.getByLabel('Headline',{exact:true}).fill('JIU JITSU EVENT');
+  await admin.getByLabel('Event to manage',{exact:true}).selectOption('f1');await admin.getByRole('status').filter({hasText:'Save or reload the current draft'}).waitFor();
+  assert.equal(await admin.getByLabel('Event to manage',{exact:true}).inputValue(),'jiu-jitsu','Unsaved edits prevent changing profile');
+  assert.equal(await admin.getByLabel('Headline',{exact:true}).inputValue(),'JIU JITSU EVENT');
+  await admin.getByLabel('Publication note').fill('Prepare jiu jitsu');await admin.getByRole('button',{name:'Publish settings',exact:true}).click();await admin.getByRole('status').filter({hasText:'Published to Cloudflare'}).waitFor();
+  await game.reload();await game.getByRole('heading',{name:'TEST YOUR REACTION TIME',exact:true}).waitFor();
+  await admin.getByRole('button',{name:'View this event’s saved results',exact:true}).click();await admin.getByText('No scores yet. Complete a game to add the first entry.',{exact:true}).waitFor();
+  assert.equal(await admin.getByText('Preserved F1 Player',{exact:true}).count(),0);
+  await admin.getByRole('button',{name:'Make Jiu jitsu live',exact:true}).click();await admin.getByText('Live event: Jiu jitsu',{exact:true}).waitFor();
+  await game.reload();await game.getByRole('heading',{name:'JIU JITSU EVENT',exact:true}).waitFor();
+  await game.getByPlaceholder('ENTER FULL NAME').fill('Email registration player');
+  await game.getByRole('button',{name:'Next field',exact:true}).click();await game.getByPlaceholder('ENTER EMAIL ADDRESS').waitFor();
+  for(const key of ['Key a','Key @','Key e','Add .com'])await game.getByRole('button',{name:key,exact:true}).click();assert.equal(await game.getByPlaceholder('ENTER EMAIL ADDRESS').inputValue(),'a@e.com');await game.getByRole('button',{name:'Backspace',exact:true}).click();assert.equal(await game.getByPlaceholder('ENTER EMAIL ADDRESS').inputValue(),'a@e.co');await game.getByPlaceholder('ENTER EMAIL ADDRESS').fill('');
+  await game.getByRole('button',{name:'Close keyboard',exact:true}).click();await game.getByRole('checkbox').check();
+  assert.equal(await game.getByRole('button',{name:'PRESS HERE TO BEGIN',exact:true}).isDisabled(),true);
+  await game.getByPlaceholder('ENTER EMAIL ADDRESS').fill('not-an-email');await game.getByRole('button',{name:'Close keyboard',exact:true}).click();await game.getByRole('alert').filter({hasText:'Enter a valid email address'}).waitFor();assert.equal(await game.getByRole('button',{name:'PRESS HERE TO BEGIN',exact:true}).isDisabled(),true);
+  await game.getByPlaceholder('ENTER EMAIL ADDRESS').fill('registration+event@example.com');await game.getByRole('button',{name:'Close keyboard',exact:true}).click();
+  assert.equal(await game.getByRole('button',{name:'PRESS HERE TO BEGIN',exact:true}).isDisabled(),true,'Nationality is required even with a name and valid email');
+  await game.getByRole('button',{name:/NATIONALITY.*SELECT NATIONALITY/}).click();assert.equal(await game.getByRole('option').count(),250);await game.getByRole('combobox',{name:'Search countries',exact:true}).fill('uae');await game.getByRole('option',{name:/United Arab Emirates/}).click();
+  assert.equal(await game.locator('.nationality-trigger img').evaluate((img:HTMLImageElement)=>img.complete&&img.naturalWidth>0),true);
+  await game.getByRole('button',{name:'PRESS HERE TO BEGIN',exact:true}).click();await game.getByRole('button',{name:'PRESS HERE TO BEGIN',exact:true}).click();await game.getByRole('button',{name:'STOP TIMER',exact:true}).waitFor();await game.getByRole('button',{name:'STOP TIMER',exact:true}).click();await game.waitForFunction(()=>!document.querySelector('button[disabled]'));
+  await admin.getByRole('button',{name:'Reports',exact:true}).click();await admin.getByRole('button',{name:'Refresh saved results',exact:true}).click();await admin.getByText('registration+event@example.com',{exact:true}).waitFor({timeout:15000});
+  const reportPromise=admin.waitForEvent('download');await admin.getByRole('button',{name:'Export CSV',exact:true}).click();const report=await reportPromise;const reportText=await readFile((await report.path())!,'utf8');assert.match(reportText,/registration\+event@example.com/);assert.match(reportText,/United Arab Emirates/);
+  const publicScores:any=await (await game.request.get(site+'/api/public/leaderboard?event=jiu-jitsu')).json();assert.ok(publicScores.every((r:any)=>r.email===''));
+  const today=dubaiDay(),yesterday=dubaiDay(Date.now()-86400000);
+  for(const [day,name] of [[yesterday,'Yesterday podium'],[today,'Today player']]){const r={...record,id:crypto.randomUUID(),fullName:name,eventId:'jiu-jitsu',timestamp:day+'T10:00:00Z'};await env.DB.prepare('INSERT INTO daily_scores(event_id,day,score_id,data,difference,completed_at) VALUES(?,?,?,?,?,?)').bind('jiu-jitsu',day,r.id,JSON.stringify(r),r.difference,r.timestamp).run();}
+  await admin.getByRole('button',{name:'Daily results',exact:true}).click();await admin.getByRole('table',{name:'Daily game data',exact:true}).getByText('Today player',{exact:true}).waitFor();
+  await admin.getByRole('table',{name:'Daily leaderboard',exact:true}).getByText('Yesterday podium',{exact:true}).waitFor();
+  const dailyDataPromise=admin.waitForEvent('download');await admin.getByRole('button',{name:'Download daily game data CSV',exact:true}).click();const dailyData=await dailyDataPromise;const rawCSV=await readFile((await dailyData.path())!,'utf8');assert.match(rawCSV,/Today player/);assert.doesNotMatch(rawCSV,/Yesterday podium/);
+  const dailyBoardPromise=admin.waitForEvent('download');await admin.getByRole('button',{name:'Download daily leaderboard CSV',exact:true}).click();const dailyBoard=await dailyBoardPromise;const boardCSV=await readFile((await dailyBoard.path())!,'utf8');assert.match(boardCSV,/Yesterday podium/);assert.match(boardCSV,/Today player/);
+  await admin.getByLabel('Daily results date (Dubai)',{exact:true}).fill(yesterday);await admin.getByRole('table',{name:'Daily game data',exact:true}).getByText('Yesterday podium',{exact:true}).waitFor();
+  assert.equal(await admin.getByRole('table',{name:'Daily leaderboard',exact:true}).getByText('Today player',{exact:true}).count(),0);
+  await admin.screenshot({path:'/tmp/fab-daily-admin.png',fullPage:true});
+  await admin.getByLabel('Event to manage',{exact:true}).selectOption('f1');await admin.getByRole('status').filter({hasText:'Managing F1'}).waitFor();
+  await admin.getByRole('table',{name:'Admin leaderboard'}).getByText('Preserved F1 Player',{exact:true}).waitFor();
+  await admin.screenshot({path:'/tmp/fab-event-admin.png',fullPage:true});
+  const content:any=await (await game.request.get(site+'/api/public/content')).json();assert.equal(content.eventId,'jiu-jitsu','Viewing F1 history does not switch live game');
+  await admin.getByRole('button',{name:'Make F1 · 2–3 November 2026 live',exact:true}).click();await admin.getByText('Live event: F1 · 2–3 November 2026',{exact:true}).waitFor();
+  await game.reload();await game.getByRole('heading',{name:'TEST YOUR REACTION TIME',exact:true}).waitFor();
+  await admin.getByRole('button',{name:'Settings',exact:true}).click();assert.equal(await admin.getByLabel('Headline',{exact:true}).inputValue(),'TEST YOUR REACTION TIME');
+  await admin.getByLabel('Event to manage',{exact:true}).selectOption('jiu-jitsu');await admin.getByRole('status').filter({hasText:'Managing Jiu jitsu'}).waitFor();assert.equal(await admin.getByLabel('Headline',{exact:true}).inputValue(),'JIU JITSU EVENT');
+  assert.deepEqual(errors,[]);
+ }finally{await browser.close();await new Promise<void>(r=>server.close(()=>r()));await mf.dispose();}
+});

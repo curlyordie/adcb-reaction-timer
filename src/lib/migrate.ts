@@ -1,0 +1,9 @@
+import {load,normalize,original,type Settings} from './settings';
+import {api,hostedStudio} from './runtime';
+import {exportArtwork,uploadArtwork} from './assets';
+import {writeStudio} from './studio';
+import type {LeaderboardRecord} from './leaderboard';
+const fields=['logo','artwork','decoration','countdownArtwork','resultArtwork'] as const;
+export function oldBrowserData(){const studio=load<any>('fab-studio',null);const versions=studio?.versions||load('fab-versions',[original]);const draft=normalize(studio?.draft||load('fab-draft',versions.at(-1).settings));return {draft,versions,records:load<LeaderboardRecord[]>('fab-records',[])};}
+export async function browserBackup(){return {...oldBrowserData(),assets:await exportArtwork(true)};}
+export async function migrateBrowser(expected:number){const old=oldBrowserData();const assets=await exportArtwork(true);const draft:Settings=structuredClone(old.draft);for(const key of fields){if(!draft[key]||draft[key].startsWith('/api/art/'))continue;const data=draft[key].startsWith('asset:')?assets[draft[key]]:draft[key];if(!data)throw Error('A local image is missing. Remove it in the old draft or restore it before transferring.');const response=await fetch(data);const blob=await response.blob();draft[key]=await uploadArtwork(new File([blob],'migration-artwork',{type:blob.type}));}const next=await writeStudio(expected,draft,'Transferred design from this browser');let imported=0;try{for(let i=0;i<old.records.length;i+=100){const chunk=old.records.slice(i,i+100);await api('admin/import',{records:chunk,eventId:hostedStudio?.eventId||'f1'});imported+=chunk.length;}}catch(error){throw Error('Design was published, but only '+imported+' scores were transferred. Reload saved draft and retry; existing score IDs will not duplicate. '+(error instanceof Error?error.message:''));}return next;}

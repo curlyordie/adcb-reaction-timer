@@ -1,0 +1,43 @@
+import {normalize} from '../shared/domain';
+import {HttpError} from './auth';
+
+export const eventProfiles=[{id:'f1',name:'F1 · 2–3 November 2026'},{id:'jiu-jitsu',name:'Jiu jitsu'}] as const;
+export function eventId(value:unknown){if(!eventProfiles.some(event=>event.id===value))throw new HttpError(400,'Choose a valid event.');return value as string;}
+type DatabaseEnv={DB:D1Database};
+const initialized=new WeakMap<D1Database,Promise<void>>();
+// Copy the old studio once. Historical tables and all existing scores stay intact.
+export async function initializeEvents(env:DatabaseEnv){
+ let pending=initialized.get(env.DB);
+ if(!pending){pending=(async()=>{
+  await env.DB.batch([
+   env.DB.prepare("INSERT OR IGNORE INTO daily_scores(event_id,day,score_id,data,difference,completed_at) SELECT 'jiu-jitsu',date(completed_at,'+4 hours'),id,data,difference,completed_at FROM records WHERE json_extract(data,'$.eventId')='jiu-jitsu'"),
+   env.DB.prepare("INSERT OR IGNORE INTO event_profiles(id,name,revision,draft,active_id) SELECT 'f1',?,revision,draft,active_id FROM studio WHERE id=1").bind(eventProfiles[0].name),
+   env.DB.prepare("INSERT OR IGNORE INTO design_versions(id,settings,reason,created_at) SELECT 'jiu-jitsu-initial-v1',json_set(v.settings,'$.eventName','Jiu jitsu'),'Initial jiu jitsu profile',? FROM event_profiles e JOIN design_versions v ON v.id=e.active_id WHERE e.id='f1'").bind(new Date().toISOString()),
+   env.DB.prepare("INSERT OR IGNORE INTO event_design_versions(version_id,event_id) VALUES('jiu-jitsu-initial-v1','jiu-jitsu')"),
+   env.DB.prepare("INSERT OR IGNORE INTO event_profiles(id,name,revision,draft,active_id) SELECT 'jiu-jitsu',?,0,settings,id FROM design_versions WHERE id='jiu-jitsu-initial-v1'").bind(eventProfiles[1].name),
+   env.DB.prepare("INSERT OR IGNORE INTO game_event_state(id,active_event_id,revision) VALUES(1,'f1',0)")
+  ]);
+ })();initialized.set(env.DB,pending);}
+ try{await pending;}catch(error){initialized.delete(env.DB);throw error;}
+}
+export async function activeEvent(env:DatabaseEnv){const row=await env.DB.prepare('SELECT active_event_id,revision FROM game_event_state WHERE id=1').first<{active_event_id:string;revision:number}>();if(!row)throw new HttpError(503,'Event profiles are not initialized.');return row;}
+export async function eventState(env:DatabaseEnv,selected?:string){const id=selected??(await activeEvent(env)).active_event_id;const row=await env.DB.prepare('SELECT id,name,revision,draft,active_id FROM event_profiles WHERE id=?').bind(id).first<{id:string;name:string;revision:number;draft:string;active_id:string}>();if(!row)throw new HttpError(404,'Event profile not found.');return row;}
+export async function eventSnapshot(env:DatabaseEnv,selected?:string){
+ const row=await eventState(env,selected);const active=await activeEvent(env);
+ const versions=await env.DB.prepare("SELECT v.id,v.settings,v.reason,v.created_at FROM design_versions v LEFT JOIN event_design_versions e ON e.version_id=v.id WHERE COALESCE(e.event_id,'f1')=? ORDER BY v.rowid").bind(row.id).all<{id:string;settings:string;reason:string;created_at:string}>();
+ return {eventId:row.id,eventName:row.name,activeEventId:active.active_event_id,eventRevision:active.revision,events:eventProfiles,revision:row.revision,draft:normalize(JSON.parse(row.draft)),versions:versions.results.map(v=>({id:v.id,settings:normalize(JSON.parse(v.settings)),reason:v.reason,createdAt:v.created_at}))};
+}
+export async function switchEvent(env:DatabaseEnv,selected:string,expected:number){
+ const result=await env.DB.prepare('UPDATE game_event_state SET active_event_id=?,revision=revision+1 WHERE id=1 AND revision=?').bind(selected,expected).run();
+ if(result.meta.changes!==1)throw new HttpError(409,'The active event changed in another Admin window. Reload saved draft before switching.');
+ return eventSnapshot(env,selected);
+}
+export async function savedEventRecords(env:DatabaseEnv,selected:string,cursor:number){
+ if(selected==='jiu-jitsu'){const rows=await env.DB.prepare("SELECT data FROM daily_scores WHERE event_id=? ORDER BY day,completed_at,score_id LIMIT 501 OFFSET ?").bind(selected,cursor).all<{data:string}>();return {records:rows.results.slice(0,500).map(r=>JSON.parse(r.data)),next:rows.results.length>500?cursor+500:null};}
+
+ // Current records win when a backup contains the same score ID. The backup is read only.
+ const backup=selected==='f1'&&await env.DB.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='records_backup_20261103'").first();
+ const archived=backup?" UNION ALL SELECT b.id,b.data,b.completed_at FROM records_backup_20261103 b WHERE NOT EXISTS(SELECT 1 FROM records r WHERE r.id=b.id)":"";
+ const rows=await env.DB.prepare("SELECT id,data FROM (SELECT id,data,completed_at FROM records WHERE COALESCE(json_extract(data,'$.eventId'),'f1')=?"+archived+") ORDER BY completed_at,id LIMIT 501 OFFSET ?").bind(selected,cursor).all<{id:string;data:string}>();
+ return {records:rows.results.slice(0,500).map(r=>JSON.parse(r.data)),next:rows.results.length>500?cursor+500:null};
+}

@@ -1,0 +1,420 @@
+/**
+ * ADMIN PANEL BLUEPRINT — reusable implementation reference
+ * Source project: curlyordie/FAB_Rewards_Emirati_Islamic_Credit_Card
+ * Source baseline: 86f638c (includes isolated Admin scratch-card preview).
+ *
+ * HOW TO USE THIS FILE
+ * This is a documented architecture and a small, dependency-free set of porting
+ * examples. It is NOT a standalone replacement for the complete application.
+ * The accompanying ZIP contains the actual implementation under reference-source/.
+ * Read this file first, then transplant the modules you need. All example types
+ * below are deliberately generic; the exact project types live in domain.ts.
+ * No live credentials, database exports, stock data or user records are included.
+ *
+ * 1. WHAT WE BUILT
+ * A TypeScript/DOM administration application, bundled with Vite. It has a
+ * shared service interface and multiple persistence adapters. The current hosted
+ * route uses Cloudflare Pages/Functions and Supabase Auth, PostgreSQL and Storage.
+ * The retained local HTML, Node/SQLite and Electron routes are alternatives,
+ * not required prerequisites for a new hosted installation. There is no React,
+ * Next.js, Express or ORM requirement for the current hosted Admin.
+ *
+ * Hosted request path:
+ *   /admin/ → cloud-admin.ts → mountAdmin(Service) → same-origin /api/<action>
+ *   → Cloudflare Pages Function → backend.ts → Supabase Auth / SQL RPC / Storage.
+ *
+ * Guest path is separate:
+ *   game → browser-store.ts + hosted-sync.ts → /api/content, /api/updates,
+ *   /api/guest/<action>. Guests do not get the Admin snapshot, history or stock.
+ *
+ * Operational separation matters:
+ *   - Git/code deployment changes application software.
+ *   - Saving a draft changes unpublished editable content.
+ *   - Publishing content creates a version and changes activeVersionId.
+ *   - Inventory edits change private stock independently of content versions.
+ *   - A SQL migration changes the database. A Pages deployment does not run SQL.
+ *   - Preview sessions simulate gameplay; they never publish or deduct stock.
+ *
+ * 2. MODULE MAP (paths are relative to reference-source/)
+ *
+ * administration/panel.ts
+ *   Main shell, navigation, event switching, forms, draft editing, publishing,
+ *   preview mounting, confirmation/error messages and lifecycle cleanup.
+ * administration/panel.css
+ *   Admin layout, responsive controls, tables, cards, dialogs and editor styles.
+ * administration/domain.ts
+ *   Settings/Version/GameRecord/AdminState contracts; validation; baseline;
+ *   publish, restore, delete; differences; daily analytics; Dubai date helpers.
+ * administration/event-workspaces.ts + shared/events.ts
+ *   Event routing, storage-key/device namespaces, workspace extraction/merge.
+ * administration/page-editor.ts
+ *   Visual page editor and preview surfaces; English/Arabic content editing.
+ * administration/page-visibility-panel.ts + shared/page-visibility.ts
+ *   Optional-page switches and valid entry-page rules.
+ * shared/page-artwork.ts + shared/artwork.ts + shared/text-panels.ts
+ *   Artwork slot definitions, dimensions, aliases and text-background opacity.
+ * administration/content-export.ts + json-download.ts
+ *   Public/published-only content export versus private full backups.
+ * administration/export.ts + record-settings.ts
+ *   Actual XLSX workbooks and historical per-round mechanics reporting.
+ * administration/inventory-panel.ts
+ *   Private availability, stock quantities, experience settings, reports, legacy
+ *   reservations, optional sales access, audit history and SQL download.
+ * administration/giveaways-panel.ts
+ *   Earlier daily allocations. Retained read-only; not the active stock model.
+ * administration/game-preview.ts
+ *   Real Game and Scene in Shadow DOM; memory-only scratch service. Finish:
+ *   result → simulated scratch card for qualifiers → home. No stock/API writes.
+ * administration/browser-store.ts
+ *   IndexedDB implementation and local scratch progress. Also defines Service.
+ * administration/hosted-sync.ts + navigation-cache.ts
+ *   Published-content updates, device enrolment, queued result delivery/cache.
+ * administration/vault.cjs + desktop.cjs + server/
+ *   Retained SQLite, desktop bridge and alternate Node-hosted implementation.
+ * administration/auth.ts + auth.json (auth.json excluded from the bundle)
+ *   Legacy local/offline password verifier. Hosted auth uses Supabase instead.
+ *   For a port, remove local auth if unused or create your own verifier; do not
+ *   transplant the original project's offline password configuration.
+ * stand/src/cloud-admin.ts
+ *   Hosted Service adapter, session restoration, paginated reports, uploads,
+ *   mounting Admin and routing between event workspaces.
+ * cloudflare/backend.ts
+ *   Auth, request validation, scoped routing, content publication, records and
+ *   artwork delivery. Constructed per request, preventing cookie state leakage.
+ * cloudflare/inventory.ts
+ *   Authenticated stock actions, password re-checks and sales session endpoints.
+ * cloudflare/supabase-errors.ts + live-updates.ts
+ *   Safe error translation and bounded published-version notifications.
+ * functions/api/[[path]].ts
+ *   Pages request entry point. Passes env, bundled defaults and app version.
+ * supabase/setup.sql
+ *   Core tables/RPCs, RLS/grants and private artwork storage setup.
+ * supabase/inventory.sql
+ *   Inventory, immutable digital draws, giveaway ledger, legacy sales, audit.
+ * supabase/giveaways.sql
+ *   Compatibility copy of the complete inventory setup; do not install divergent
+ *   versions. setup.sql then inventory.sql is the main new-install sequence.
+ * supabase/sales-password-api-fix.sql
+ *   Targeted legacy repair; included by the complete inventory setup too.
+ * content/admin-defaults.json
+ *   Product-specific protected baseline content and initial settings.
+ * stand/src/content.ts + guest.ts + scene.ts + main.ts + scratch*.ts
+ *   Guest rendering, gameplay, scratch UI and the real guest Finish flow.
+ * scripts/build-web.mjs
+ *   Builds guest/Admin/sales entries, routes/headers, assets and offline cache.
+ * .github/workflows/deploy-cloudflare.yml
+ *   Node 24 → npm ci → build:cloudflare → Wrangler Pages deployment.
+ *
+ * 3. ADMIN SCREENS AND THEIR RESPONSIBILITIES
+ * Overview & reports:
+ *   Daily participants/starts/completions, qualification, averages, peak hours,
+ *   individual game list and XLSX export. A participant visit is not a game;
+ *   distinguish started/completed/abandoned. Historical rounds keep their own
+ *   threshold, comparison, duration, speed and version; never recalculate old
+ *   winners using today's settings. Dates and grouping use Asia/Dubai.
+ * Game settings:
+ *   Duration, coin speed, qualification, language, guidance, unpublished preview.
+ *   Preview-only digital-card checkbox must not modify published digital flags.
+ * Page visibility:
+ *   Hide optional pages while retaining a reachable valid entry/guest journey.
+ * Page & text editor:
+ *   English/Arabic dictionaries, RTL, visual page selection, artwork and text
+ *   transparency. Preserve dynamic tokens such as {threshold}/{seconds}/{percent}.
+ * Inventory & scratch cards:
+ *   Separate event + test/live pools; availability switches; whole-number total
+ *   allocations; digital mode and non-winning chance; automatic award ledger;
+ *   remaining stock and Excel; test reset; historical reservation management.
+ * Earlier daily allocations:
+ *   Legacy reporting only. Never run competing daily and campaign stock systems.
+ * Event branding:
+ *   Defined image slots, type/dimension checks, previews and uploads; publish
+ *   artwork with content, not by editing the generated HTML file.
+ * Version history:
+ *   Protected supplied original, dated changes/reasons, restore as a new version,
+ *   custom-version deletion and controlled baseline reset. Keep game records.
+ * Connection & backup:
+ *   Device activity, full private backup, published-only export and validated
+ *   merge/import. Local desktop sync controls apply only to the retained adapter.
+ *
+ * 4. STATE, DRAFTS AND PUBLICATION
+ * Settings = gameplay values + language dictionaries + artwork references +
+ * optional-page/transparency values + digital experience flags.
+ * Version = immutable ID/parent/settings/time/reason/source/diff/restoredFrom.
+ * AdminState = activeVersionId + versions + draft + record view + adapter data.
+ * Inventory is NOT inside guest Settings: availability, quantities, audit and
+ * ledger stay private. digitalScratchEnabled/inventoryTestMode/nonWinningPercent
+ * are experience flags, while prize availability is private database state.
+ *
+ * Edit → validate → save draft → review diff/note/password → publish new version.
+ * Restore copies a historical version into a NEW version; it does not rewrite
+ * the old one. Protect the original from normal edit/delete/import replacement.
+ * A controlled baseline-reset action is different from deleting arbitrary data.
+ * The original ID factory-v0.3.0 is a legacy data identity, not the app version.
+ * Change it only with a deliberate migration in a new product.
+ *
+ * Root fab_state stores a shared revision. The primary event lives at the root;
+ * other event states live under eventWorkspaces. Always merge the selected
+ * workspace back into the latest root and use compare-and-swap. Never save a
+ * secondary event over the whole root. All events currently share an authorised
+ * Admin identity; event scoping is NOT a general tenant/role permission system.
+ *
+ * 5. SAVE UX — FIXES WORTH REUSING
+ * Keep draft form values separate from server snapshots. Initial controls stay
+ * disabled until real values arrive. Preserve dirty inputs through refreshes;
+ * keep a separate quantity draft/baseline for each stock mode. Saving one form
+ * must not discard edits in another. Show saving/success/error beside the clicked
+ * button; default the ordinary change note rather than allowing silent native
+ * validation to look like an inactive save. Clear passwords after successful use.
+ *
+ * Discard late/stale load responses using a monotonically increasing request
+ * sequence. Invalidate earlier reads when a mutation starts. Never show defaults
+ * as if they were saved values. Verify the post-save snapshot before saying
+ * "saved and verified". A saved test/live mode change also selects its stock view.
+ *
+ * Live awards advance stock revision while an Admin types. Quantity saves send
+ * expectedTotal/expectedEnabled as well as revision. Backend may re-read and retry
+ * with the current revision ONLY if allocation/availability match that baseline.
+ * Another Admin's allocation edit must remain a conflict. SQL still validates
+ * that totals cannot fall below issued + held, even after a permitted retry.
+ * Do not fix stale saves with an unconditional last-writer-wins overwrite.
+ *
+ * 6. HOSTED API CONTRACT
+ * Read routing code for exact payload validation; examples use these routes:
+ * POST /api/login {password}; logout/snapshot/records/devices/backup.
+ * POST /api/draft {settings}.
+ * POST /api/publish {settings,reason,password,expectedVersionId}.
+ * POST /api/restore {versionId,reason,password,expectedVersionId}.
+ * POST /api/deleteVersions {versionIds,password,expectedVersionId}.
+ * POST /api/resetBaseline {reason,password,expectedVersionId}.
+ * POST /api/import {backup,password}.
+ * POST /api/artworkUpload {type} → signed upload URL + immutable asset reference.
+ * POST /api/inventory {knownRevision}; inventoryConnection; inventoryReport.
+ * POST /api/prizeSettings {digitalScratchEnabled,inventoryTestMode,
+ *   nonWinningPercent,expectedVersionId,reason,password}.
+ * POST /api/inventoryAdjust {mode,total,enabled,expectedRevision,
+ *   expectedTotal,expectedEnabled,reason,password}.
+ * POST /api/resetTestInventory {reason,password}.
+ * POST /api/releaseInventoryClaim {claimId,reason,password} (legacy pending only).
+ * POST /api/salesPassword {newPassword,reason,password} (optional legacy staff).
+ * GET /api/content?knownVersionId=...; GET /api/updates?knownVersionId=... .
+ * POST /api/guest/enrol, check, sync, giveaway, giveawayReady.
+ * POST /api/sales/login, logout, snapshot, confirm, report (optional).
+ * GET /api/art/<immutable-file> delivers approved stored artwork.
+ *
+ * Secondary events use /api/events/<eventId>/<action>. Admin generally returns
+ * {result:...}; guest/content responses have their own documented shapes in code.
+ * Copy the relevant Service adapter; do not assume every endpoint has one wrapper.
+ * Current browser request headers identify Admin/Game/Sales callers, but headers
+ * are NOT authentication. Never implement authorisation using those headers alone.
+ *
+ * 7. SECURITY AND CREDENTIALS
+ * Hosted login checks a configured Supabase email and exact authorised user ID.
+ * Access/refresh cookies are HttpOnly/Secure/SameSite=Strict and API-scoped. A
+ * refresh path renews sessions. Incoming Origin is checked against the site.
+ * Sensitive mutations re-check the Admin password; draft save uses the session.
+ * Service-role calls happen only in server functions. Database RLS/grants reject
+ * anon/authenticated access to private tables; the server enforces application
+ * rules before using service_role. Public guest identity tokens are device-scoped
+ * and hashed in storage. Guests cannot change settings or read others' reports.
+ *
+ * Cloudflare server-side requirements (names only; supply your own securely):
+ * SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, FAB_ADMIN_EMAIL, FAB_ADMIN_USER_ID.
+ * Keep service keys out of VITE_* variables, client bundles, logs and exports.
+ * GitHub deployment uses CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets.
+ * A new project must configure its own identities, Pages target and Supabase DB.
+ * New services may have different auth/key formats; test the adapter you choose.
+ *
+ * The build also separates public cached assets from private no-store responses.
+ * Signed uploads and server asset references keep arbitrary credentialed URLs
+ * and inline upload secrets out of published settings. Preserve input validation,
+ * HTML escaping, size limits, image constraints and safe error translation.
+ * If you need multiple administrators/roles/tenants, design that authorisation
+ * explicitly; this implementation's single configured owner is not full RBAC.
+ *
+ * 8. DATABASE AND STOCK TRANSACTIONS
+ * Core: fab_state, fab_devices, fab_records, fab_counter, fab_enrol_limits.
+ * Stock: fab_inventory (event_id, mode, epoch, total, enabled, issued, held,
+ * revision), fab_giveaway_claims, fab_handovers, fab_inventory_audit.
+ * Legacy daily: fab_giveaway_days, fab_giveaway_audit.
+ * Optional sales: fab_sales_credentials, fab_sales_sessions, fab_sales_attempts.
+ * Storage: private fab-artwork bucket. SQL files contain the real definitions,
+ * grants, indexes and RPC functions; use them rather than this descriptive list.
+ *
+ * Per prize: inStock = total - issued; available = total - issued - held.
+ * enabled=false excludes a prize from NEW digital draws; it does not remove its
+ * advertised image, erase its history or cancel an already assigned card.
+ * Each qualifying completed game has at most one immutable digital draw.
+ * Server verifies device ownership, event, captured version/digital flags and
+ * qualification. A caller cannot turn a test round into a live one. Selection
+ * uses enabled remaining stock and the configured non-winning percentage.
+ * If no enabled stock remains, issue a normal thank-you card with no stock message.
+ *
+ * The draw function serialises stock access and, in ONE transaction, deducts
+ * issued, inserts the claim, writes the giveaway ledger and remaining balance,
+ * and updates audit/report revisions. A repeated draw returns the same claim.
+ * Assignment is counted BEFORE scratching: this prevents double promising the
+ * last unit, but is not proof of physical collection. No code/staff confirmation
+ * is needed for new digital awards. Do not add a second deduction on reveal.
+ *
+ * Legacy pending reservations use held counters and can be confirmed/released.
+ * Keep their migration path while moving new wins to automatic issue. Test reset
+ * changes test epoch/counters only; retain historical rows and live pools. A
+ * stale reservation from an old epoch cannot consume newly reset test stock.
+ * Opening quantities in SQL are product-specific and seeded once. Replace them
+ * for a NEW project; never reseed or replenish an existing live pool accidentally.
+ *
+ * 9. GUEST AND PREVIEW FLOW
+ * Current guest flow: finish coin game → result → Finish → scratch card (only
+ * digital qualifiers) → reveal three coins → Finish → home. Non-qualifiers and
+ * physical-card rounds finish directly home. The result waits for durable local
+ * completion save before opening its card. Use the round's captured digital flag,
+ * not a different setting that may have been published during play.
+ * A pending card can resume after refresh; a completed card cannot reroll.
+ *
+ * Admin Test game has an explicit preview-only include-digital checkbox. It
+ * creates a memory-only Service and reuses the real scratch component. A test
+ * uses actual engine/artwork/draft mechanics but does not call guest award APIs,
+ * create participant records, consume test/live inventory or publish settings.
+ * Do not substitute inventoryTestMode for this isolation: that flag still uses
+ * shared test inventory, whereas this Admin preview touches no inventory at all.
+ *
+ * 10. XLSX, BACKUPS AND HISTORICAL EVIDENCE
+ * export.ts creates a real OOXML XLSX ZIP using fflate, not renamed CSV/HTML.
+ * Game workbook: Games, Daily summary, Hourly usage. Inventory workbook: Stock,
+ * Giveaways, Pending wins, Changes. Retain stock mode/event/date range, local
+ * timestamp and UTC evidence. Every award ledger row records its remaining stock
+ * THEN; a current balance alone cannot reconstruct that historical value.
+ * Dubai timezone is explicit; adapt all grouping/boundaries/exports consistently
+ * if the new project needs another timezone. Escape XML values and keep user text
+ * as inline strings so it cannot become a spreadsheet formula.
+ * Published-only exports must exclude private draft/history/report/session data.
+ * Full backups are private and can be large; imports must validate schema/event,
+ * versions, records, limits and protected-original behaviour before merging.
+ *
+ * 11. PORTING SEQUENCE
+ * A. Choose hosted-only or the additional offline/desktop adapters. Copy the
+ *    dependency graph, not panel.ts alone. That file imports editor, exports,
+ *    previews, domains, styles, content and guest components.
+ * B. Replace event IDs/routes, baseline texts, pages, artwork slots, dimensions,
+ *    gameplay rules, prize IDs and opening allocation seeds with your project's.
+ * C. Replace factory/baseline IDs deliberately; remove FAB-specific content-release
+ *    and one-time repair routines unless you migrate and test their semantics.
+ * D. Keep generic Settings/Version/draft/Service concepts. Supply your own actual
+ *    form schema and validator. Update API, SQL and export IDs together.
+ * E. Create a new Supabase project. Run setup.sql then the adapted inventory.sql.
+ *    Configure private storage and your own Auth owner. Do not point a new project
+ *    at the original event's database merely to test the port.
+ * F. Adapt Cloudflare bindings, Pages project name, wrangler.toml, routing, headers,
+ *    CSP, cache and workflow target. Keep your API same-origin when possible.
+ * G. Validate client and server in isolation, then run full guest/Admin workflows
+ *    against disposable data. Run SQL twice to prove migration repeatability.
+ * H. Deploy code and apply database migrations as separate, observed steps. Check
+ *    the actual GitHub run, Pages deployment and live application version. A Git
+ *    push alone is not proof that a deployment completed.
+ *
+ * 12. BUILD AND VALIDATION REFERENCE
+ * Node >=24; pinned dependencies are in package.json and package-lock.json.
+ * npm ci; npm test; npm run typecheck; npm run build:cloudflare.
+ * Browser suite currently needs a *.spec.ts-only Playwright config: the original
+ * config also discovers Vitest *.test.ts files. Keep runners separated when porting.
+ * scripts/test-inventory-sql.mjs: real PostgreSQL, racing draws, finite stock,
+ *   disabled prizes, immutable retries, ledger, reset and migration repeatability.
+ * scripts/test-inventory-browser.mjs: real SQL + hosted Admin/guest UI + Excel.
+ * scripts/test-inventory-settings.mjs: delayed refresh/draft preservation, live
+ *   consumption during save, durable test/live choice and allocation conflicts.
+ * tests/scratch-finish.spec.ts: digital/physical/non-qualifier Finish journeys.
+ * scripts/test-admin-scratch-preview.mjs: preview flow with unchanged published
+ *   settings, stock, records/ledger and zero giveaway API calls.
+ * Fixtures stub external Admin identity and use a disposable database. They do
+ * not prove your new provider credentials or live deployment are configured.
+ * Keep tests that prove these boundaries when replacing the renderer or framework.
+ *
+ * 13. ARCHIVE LIMITS
+ * The bundle is an implementation reference, NOT a ready-to-deploy rebrand.
+ * It omits auth.json, binaries, built HTML, fonts and public brand artwork, local
+ * caches, ignored configuration, credentials, operator data and Git metadata.
+ * Supply your own licensed assets, fonts, baseline content and authentication.
+ * Do not copy repair scripts, production project identifiers or stock seed values
+ * without adapting them. If you keep optional local auth, regenerate its config.
+ */
+
+// Dependency-free generic examples. The real production implementations and
+// product-specific validation are in the source paths documented above.
+export type StockMode = 'test' | 'live';
+export type PrizeId = string;
+export interface PortableSettings {
+  defaultLanguage: string;
+  texts: Record<string, Record<string, string>>;
+  assets: Record<string, {data: string; name: string; width: number; height: number}>;
+}
+export interface PortableVersion<S> {
+  id: string; parentId: string | null; createdAt: string;
+  reason: string; source: string; settings: S; restoredFrom?: string;
+}
+export interface PortableWorkspace<S> {
+  activeVersionId: string;
+  versions: PortableVersion<S>[];
+  draft: S | null;
+}
+export interface PortableService {
+  call<T>(action: string, payload?: unknown): Promise<T>;
+}
+
+/** Illustrative immutable version creation; call behind authorised server code.
+ * Actual persistence still needs a transaction/CAS and protected-original rules.
+ */
+export function createPublication<S>(
+  current: PortableWorkspace<S>, settings: S, reason: string,
+  validate: (value: S) => S, source = 'Admin',
+): {workspace: PortableWorkspace<S>; version: PortableVersion<S>} {
+  if (!reason.trim()) throw new Error('A publication note is required.');
+  const version: PortableVersion<S> = {
+    id: crypto.randomUUID(), parentId: current.activeVersionId,
+    createdAt: new Date().toISOString(), reason: reason.trim(), source,
+    settings: structuredClone(validate(settings)),
+  };
+  return {version, workspace: {
+    ...current, activeVersionId: version.id,
+    versions: [...current.versions, version], draft: null,
+  }};
+}
+
+/** Client adapter example: a request header identifies the client, not its user.
+ * The server must authenticate the cookie and authorise each action independently.
+ */
+export function sameOriginService(base = '/api'): PortableService {
+  return {async call<T>(action: string, payload: unknown = {}): Promise<T> {
+    if (!/^[A-Za-z][A-Za-z0-9]*$/.test(action)) throw new Error('Invalid action.');
+    const response = await fetch(`${base}/${action}`, {
+      method: 'POST', credentials: 'same-origin', cache: 'no-store',
+      headers: {'Content-Type': 'application/json', 'X-FAB-Admin': '1'},
+      body: JSON.stringify(payload),
+    });
+    const reply = await response.json() as {result?: T; error?: string};
+    if (!response.ok) throw new Error(reply.error || `Request failed (${response.status}).`);
+    return reply.result as T;
+  }};
+}
+
+export interface PrivatePrizeStock {
+  total: number; issued: number; held: number; enabled: boolean;
+}
+/** Descriptive calculation only: never use a client-side value to authorise a
+ * real award. Production draw/deduction/ledger insertion must be one SQL transaction.
+ */
+export function stockBalances(stock: PrivatePrizeStock) {
+  const inStock = stock.total - stock.issued;
+  const available = inStock - stock.held;
+  return {inStock, available, eligibleForNewDraw: stock.enabled && available > 0};
+}
+
+/** Discard a late refresh; keep edit buffers in separate per-form state. */
+export class LatestRequest {
+  private sequence = 0;
+  invalidate() { ++this.sequence; }
+  async run<T>(read: () => Promise<T>, apply: (snapshot: T) => void) {
+    const request = ++this.sequence;
+    const snapshot = await read();
+    if (request === this.sequence) apply(snapshot);
+  }
+}
