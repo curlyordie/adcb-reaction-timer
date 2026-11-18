@@ -230,3 +230,18 @@ html:has(.game-viewport){font-size:16px}
 .game .registration-consent {color:var(--game-primary);}
 
 .game .official-year-number{display:block;width:260px;max-width:100%;height:auto;margin:12px auto;object-fit:contain;}
+
+/* Exhibition composition: a framed central interaction above the desert scene. */
+.game .adcb-logo{background:transparent;mix-blend-mode:multiply;}
+.game>[data-decoration=headerLogo]{isolation:auto;}
+.game .game-stage{flex:0 0 auto;margin:auto 0;min-height:1050px;padding-top:30px;padding-bottom:120px;}
+.game .game-stage[data-screen=home]{max-width:680px;}
+.game-stage[data-screen=home]>div{background:#fff9edda;padding:38px 42px;border-radius:120px 120px 24px 24px;border:1px solid #b8a58280;box-shadow:0 24px 70px #67543814;}
+.game-stage[data-screen=home] h1{font-size:62px;line-height:1.08;letter-spacing:-.025em;}
+.game .event-name{color:#8d3326;}
+.game .timer-card{background:#fff9edee;border-radius:80px 80px 12px 12px;padding-top:40px;border-color:#b9a98a;}
+.game .timer-card.passed{border-top-color:#008a52;}
+.game .instruction-panel{border-radius:24px;padding:36px;line-height:1.9;}
+.game .result-panel{border-radius:64px 64px 18px 18px;background:#fff9edeb;}
+.game-stage[data-screen=leaderboard]{background:#fff9ede8;border-radius:56px 56px 16px 16px;padding:36px;}
+.game>[data-decoration=headerLogo]{mix-blend-mode:multiply;}
