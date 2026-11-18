@@ -1,3 +1,4 @@
+import {exhibitionElements} from '../shared/exhibition';
 import {baseline,original,normalize} from '../shared/domain';
 import {HttpError} from './auth';
 
@@ -19,15 +20,15 @@ export async function initializeEvents(env:DatabaseEnv){
   ]);
   // Publish the requested exhibition composition once for existing installations.
   // A version marker prevents subsequent deployments from overwriting editor work.
-  const redesignId='adcb-exhibition-composition-v4';
+  const redesignId='adcb-exhibition-composition-v5';
   const applied=await env.DB.prepare('SELECT id FROM design_versions WHERE id=?').bind(redesignId).first();
   if(!applied){
    const profile=await env.DB.prepare("SELECT active_id,draft FROM event_profiles WHERE id='aaihex-2026'").first<{active_id:string;draft:string}>();
    if(profile){
     const published=await env.DB.prepare('SELECT settings FROM design_versions WHERE id=?').bind(profile.active_id).first<{settings:string}>();
-    const compose=(settings:string)=>({...normalize(JSON.parse(settings)),elements:structuredClone(baseline.elements),background:baseline.background,artwork:'',title:baseline.title,text:{...normalize(JSON.parse(settings)).text,subtitle:baseline.text.subtitle,instructions:baseline.text.instructions}});
+    const compose=(settings:string)=>({...normalize(JSON.parse(settings)),elements:exhibitionElements(normalize(JSON.parse(settings)).designFormat),background:baseline.background,artwork:'',title:baseline.title,text:{...normalize(JSON.parse(settings)).text,subtitle:baseline.text.subtitle,instructions:baseline.text.instructions}});
     await env.DB.batch([
-     env.DB.prepare('INSERT OR IGNORE INTO design_versions(id,parent_id,settings,reason,created_at) VALUES(?,?,?,?,?)').bind(redesignId,profile.active_id,JSON.stringify(compose(published?.settings??profile.draft)),'Curated AAIHEX exhibition scenes',new Date().toISOString()),
+     env.DB.prepare('INSERT OR IGNORE INTO design_versions(id,parent_id,settings,reason,created_at) VALUES(?,?,?,?,?)').bind(redesignId,profile.active_id,JSON.stringify(compose(published?.settings??profile.draft)),'Centred AAIHEX scenes and precision console',new Date().toISOString()),
      env.DB.prepare('INSERT OR IGNORE INTO event_design_versions(version_id,event_id) VALUES(?,?)').bind(redesignId,'aaihex-2026'),
      env.DB.prepare("UPDATE event_profiles SET active_id=?,draft=?,revision=revision+1 WHERE id='aaihex-2026' AND active_id=?").bind(redesignId,JSON.stringify(compose(profile.draft)),profile.active_id)
     ]);

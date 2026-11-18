@@ -195,9 +195,9 @@
 
 .idle-local-scene{position:relative;flex:1;min-height:0;width:100%;margin:0;padding:0 24px 24px;border:0;overflow:hidden;pointer-events:none}.idle-scene-stage{display:flex;position:relative;align-items:center;justify-content:center;width:100%;max-width:900px;margin:auto;height:calc(100% - 150px);min-height:0}.idle-scene-stage>.result-panel,.idle-scene-stage>div:first-child:not(.playing-screen):not(.countdown-screen){max-width:448px}.idle-local-scene[data-scene=countdown] .idle-scene-stage{position:static}.idle-local-scene[data-scene=home]{overflow-y:auto}
 
-/* ADCB / Eid Al Etihad activation */
+/* ADCB foundation */
 .game{font-family:"Museo Sans",Arial,sans-serif;color:#333f48;padding-top:18px;border-top:8px solid #da291c;isolation:isolate}
-.game:after{content:"";position:absolute;inset:auto 0 0;height:7px;background:linear-gradient(90deg,#da291c 0 25%,#008a52 25% 50%,#fff 50% 75%,#333f48 75%);z-index:1}
+.game:after{content:"";position:absolute;inset:auto 0 0;height:7px;background:var(--game-accent);z-index:1}
 .game>[data-decoration=headerLogo],.game>[data-decoration=eventName]{position:relative;z-index:10}.adcb-logo{width:clamp(170px,calc(var(--canvas-vw, 1vw) * 24),290px);height:auto;max-height:110px;object-fit:contain;background:white}
 .etihad-lockup{position:absolute;top:28px;right:3%;width:clamp(65px,calc(var(--canvas-vw, 1vw) * 10),115px);z-index:10;background:white;padding:5px}.etihad-lockup img{width:100%;height:auto}
 .game .event-name{font-size:12px;letter-spacing:.25em;margin:0 0 18px}.game-stage[data-screen=home]{max-width:640px}.game-stage[data-screen=instructions]{max-width:650px}.game-stage[data-screen=playing],.game-stage[data-screen=result]{max-width:1100px}
@@ -219,60 +219,144 @@
 
 html:has(.game-viewport){font-size:16px}
 
-/* Desert exhibition treatment; colours and artwork remain editable in Admin. */
-.game {background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMzQ0IiBoZWlnaHQ9IjE4NzgiIHZpZXdCb3g9IjAgMCAxMzQ0IDE4NzgiPjxkZWZzPjxmaWx0ZXIgaWQ9ImdyYWluIj48ZmVUdXJidWxlbmNlIHR5cGU9ImZyYWN0YWxOb2lzZSIgYmFzZUZyZXF1ZW5jeT0iLjciIG51bU9jdGF2ZXM9IjMiIHN0aXRjaFRpbGVzPSJzdGl0Y2giLz48ZmVDb2xvck1hdHJpeCB0eXBlPSJzYXR1cmF0ZSIgdmFsdWVzPSIwIi8+PGZlQ29tcG9uZW50VHJhbnNmZXI+PGZlRnVuY0EgdHlwZT0ibGluZWFyIiBzbG9wZT0iLjExIi8+PC9mZUNvbXBvbmVudFRyYW5zZmVyPjxmZUJsZW5kIGluPSJTb3VyY2VHcmFwaGljIiBtb2RlPSJtdWx0aXBseSIvPjwvZmlsdGVyPjwvZGVmcz48ZyBmaWx0ZXI9InVybCgjZ3JhaW4pIj48cGF0aCBmaWxsPSIjZTdlMWNkIiBkPSJNMCAwaDEzNDR2MTg3OEgweiIvPjxwYXRoIGZpbGw9IiNmN2YwZDciIGQ9Ik0wIDE1OTBsMjcyLTE1NWMxNjYtOTkgMjY0LTMyIDQwNS04MSAxNjEtNTYgNDMxLTI0OSA2NjctMzc1djg5OUgweiIvPjwvZz48L3N2Zz4K");background-size:cover;background-position:center;}
-.game .event-name {letter-spacing:.25em;font-weight:700;padding:10px 24px;border-bottom:2px solid var(--game-accent);}
-.game .instruction-panel,.game .result-panel {border-color:#8c63354d;box-shadow:0 16px 45px #62452018;background-color:#fff9edeb;}
-.game input:not([type=checkbox]) {background:#fffaf0;border-color:#84674466;}
-.game button {transition:transform .18s,box-shadow .18s;}
+/* Exhibition layout. All interaction sits on one central axis; illustrations form
+   a grounded scene below it, never a frame of unrelated floating objects. */
+.game {
+  --scene-floor: #d9c9a6;
+  text-align:center;
+  padding:34px 24px calc(var(--canvas-vh) * 27);
+  background-image:url('./assets/cream-dunes.svg');
+  background-position:center;
+  background-size:cover;
+}
+.game::before {
+  content:"";position:absolute;inset:auto -10% 0;height:24%;z-index:0;
+  background:linear-gradient(175deg,transparent 12%,var(--scene-floor) 13%,#eee1c3 85%);
+  border-radius:50% 65% 0 0 / 22% 30% 0 0;pointer-events:none;
+}
+.game::after {height:3px;background:var(--game-accent);}
+.game>[data-decoration=headerLogo] {mix-blend-mode:multiply;}
+.game .adcb-logo {background:transparent;width:250px;max-height:100px;}
+.game>[data-decoration=headerLogo]>div {justify-content:center;padding:12px 0 24px;}
+.game .event-name {margin:0;font-size:14px;font-weight:700;letter-spacing:.27em;}
+.game>[data-decoration=eventName]::after {content:"";display:block;width:50px;height:3px;margin:24px auto 0;background:var(--game-accent);}
+.game .game-stage {
+  flex:0 0 auto;align-self:center;width:84%;max-width:880px;min-height:0;
+  margin:64px auto 0;padding:0;text-align:center;
+}
+.game h1 {font-size:58px;font-weight:700;line-height:1.1;letter-spacing:-.025em;text-align:center;}
+.game h1,.game p,.game label,.game input,.game button,.game .text-right {text-align:center;}
+.game button {transition:background-color .18s,box-shadow .18s,transform .18s;}
 .game button:enabled:hover {filter:brightness(1.05);}
 .game button:focus-visible,.game input:focus-visible {outline:3px solid var(--game-accent);outline-offset:4px;}
-.game .registration-consent {color:var(--game-primary);}
+.game button:not(.keyboard-key):not(.nationality-option) {margin-left:auto;margin-right:auto;}
+.game-stage>[data-decoration=leaderboardLink],.game-stage [data-decoration=leaderboardLink] {width:100%;}
+.game .home-screen {gap:28px;max-width:760px;margin:0 auto;padding:42px 46px;background:#fffaf0ed;border:1px solid #b3a17d80;border-radius:32px;box-shadow:0 24px 70px #67543812;}
+.game .home-headline {font-size:60px;max-width:650px;margin:0 auto;}
+.game-stage[data-screen=home] .mt-4 {font-size:20px;letter-spacing:.02em;line-height:1.6;max-width:580px;margin:22px auto 0;}
+.game .registration-panel {background:transparent;border:0;padding:0;box-shadow:none!important;}
+.game .registration-fields {gap:18px;}
+.game .registration-field {gap:9px;}
+.game .registration-field>label {font-size:12px;letter-spacing:.18em;}
+.game input:not([type=checkbox]) {background:#fffdf7;border:1px solid #b7a584;border-radius:10px;min-height:60px;}
+.game .registration-consent {color:var(--game-primary);gap:0;position:relative;padding:10px 32px 0;font-size:13px;line-height:1.65;}
+.game .registration-consent input {position:absolute;left:0;top:12px;}
+.game .registration-consent span {width:100%;}
+.game .home-actions {gap:12px;}
+.game .home-actions button,.game .instruction-begin {border-radius:10px;min-height:68px;letter-spacing:.15em;}
+.game .home-actions button {font-size:15px;}
 
-.game .official-year-number{display:block;width:260px;max-width:100%;height:auto;margin:12px auto;object-fit:contain;}
+/* How to Play: numbered steps and one clear central action. */
+.game-stage[data-screen=instructions] {max-width:830px;margin-top:85px;}
+.instructions-screen {gap:0;}
+.instructions-screen h1 {margin:0 0 38px;}
+.game .instruction-panel {background:#fffbf1e8;border:1px solid #b3a17d70;border-radius:28px;padding:14px 44px;font-size:24px;line-height:1.5;box-shadow:0 24px 65px #67543810;}
+.instruction-panel>.campaign-text {display:block;white-space:pre-line;}
+.instruction-steps {display:flex;flex-direction:column;counter-reset:step;}
+.instruction-step {display:flex;flex-direction:column;align-items:center;gap:16px;padding:28px 12px;font-size:inherit;line-height:1.5;}
+.instruction-step+.instruction-step {border-top:1px solid #b3a17d50;}
+.instruction-step-number {display:grid;place-items:center;width:44px;height:44px;border:1px solid #ab23284d;border-radius:50%;color:var(--game-accent);font-size:14px;font-weight:700;letter-spacing:.08em;flex-shrink:0;}
+.instruction-range {font-size:16px;line-height:1.6;margin:26px auto 24px;max-width:630px;}
+.game .instruction-begin {max-width:480px;}
 
-/* Exhibition composition: a framed central interaction above the desert scene. */
-.game .adcb-logo{background:transparent;mix-blend-mode:multiply;}
-.game>[data-decoration=headerLogo]{isolation:auto;}
-.game .game-stage{flex:0 0 auto;margin:auto 0;min-height:1050px;padding-top:30px;padding-bottom:120px;}
-.game .game-stage[data-screen=home]{max-width:680px;}
-.game-stage[data-screen=home]>div{background:#fff9edda;padding:38px 42px;border-radius:120px 120px 24px 24px;border:1px solid #b8a58280;box-shadow:0 24px 70px #67543814;}
-.game-stage[data-screen=home] h1{font-size:62px;line-height:1.08;letter-spacing:-.025em;}
-.game .event-name{color:#8d3326;}
-.game .timer-card{background:#fff9edee;border-radius:80px 80px 12px 12px;padding-top:40px;border-color:#b9a98a;}
-.game .timer-card.passed{border-top-color:#008a52;}
-.game .instruction-panel{border-radius:24px;padding:36px;line-height:1.9;}
-.game .result-panel{border-radius:64px 64px 18px 18px;background:#fff9edeb;}
-.game-stage[data-screen=leaderboard]{background:#fff9ede8;border-radius:56px 56px 16px 16px;padding:36px;}
-.game>[data-decoration=headerLogo]{mix-blend-mode:multiply;}
+/* Gameplay: a single precision instrument, with two stages and clear states. */
+.game-stage[data-screen=playing] {max-width:920px;margin-top:100px;}
+.game .double-challenge {padding:0;}
+.game .double-challenge .eyebrow {font-size:13px;letter-spacing:.22em;margin:0 0 20px;}
+.game .double-challenge h1 {max-width:800px;margin:0 auto;}
+.game .challenge-instruction {font-size:22px;line-height:1.6;min-height:2em;margin:22px auto 28px;}
+.game .timer-pair {gap:0;padding:28px;background:var(--game-primary);border:1px solid #fff8;border-radius:28px;box-shadow:0 24px 50px #333f4826;}
+.game .timer-card {position:relative;display:flex;flex-direction:column;align-items:center;padding:28px 24px;background:transparent;border:0;border-radius:0;box-shadow:none;color:#fffaf0;}
+.game .timer-card+.timer-card {border-left:1px solid #fff3;}
+.game .round-heading {flex-direction:column;justify-content:center;gap:14px;font-size:13px;letter-spacing:.2em;min-height:54px;}
+.game .round-heading>span:last-child {font-size:10px;letter-spacing:.14em;color:#e0d5bd;}
+.game .timer-card .digital-stopwatch {color:#fffaf0;padding:24px 0 0;}
+.game .timer-card .national-day-numerals {font-size:112px;color:inherit;}
+.game .timer-card .stopwatch-units {color:#d5ccba;font-size:9px;}
+.game .timer-card>p {font-size:14px;margin:22px 0 28px;color:#e0d5bd;}
+.game .timer-action {font-size:18px;border-radius:10px;min-height:72px;margin-top:auto;letter-spacing:.13em;}
+.game .timer-action:disabled {background:#ffffff12;border:1px solid #ffffff30;color:#d0cbbf;font-size:12px;letter-spacing:.08em;}
+.game .timer-card.passed .round-heading>span:last-child {color:#b0e1c5;}
+.game .timer-card.passed .timer-action {color:#b0e1c5;border-color:#b0e1c566;}
+.game .tolerance-note {font-size:16px;line-height:1.7;margin:28px auto 0;max-width:700px;}
 
-/* A shared exhibition identity, with a different scene and silhouette per chapter. */
-.game[data-screen=home] .game-stage{padding-top:0;}
-.game[data-screen=instructions] .game-stage{max-width:680px;}
-.game[data-screen=instructions] .instruction-panel{border-radius:100px 20px 100px 20px;background:#fff9edf2;border-top:5px solid var(--game-accent);padding:56px 40px;}
-.game[data-screen=playing] .game-stage{padding-bottom:180px;}
-.game[data-screen=playing] .timer-pair{gap:28px;}
-.game[data-screen=playing] .timer-card{border-radius:16px;border-top:6px solid var(--game-accent);box-shadow:0 20px 50px #604b231a;}
-.game[data-screen=result] .result-panel{border-radius:120px 120px 20px 20px;border-top:6px solid var(--game-accent);}
-.game[data-screen=leaderboard] .game-stage{border-radius:16px;border-top:6px solid var(--game-accent);box-shadow:0 20px 70px #604b2320;}
-.game[data-screen=leaderboard] h1{letter-spacing:.08em;}
-.game[data-screen=countdown]{background-color:#333f48!important;}
-.game[data-screen=countdown] .event-name{color:#fff9ed;}
-.game[data-screen=countdown] .countdown-number{color:#fff9ed;text-shadow:0 8px 0 #ab2328;}
-.game[data-screen=countdown]{background-image:linear-gradient(#333f48e8,#333f48e8)!important;}
+/* Results: a quiet keepsake above the gathering; rankings: a clean honours list. */
+.game-stage[data-screen=result] {max-width:800px;margin-top:55px;}
+.game .result-panel {border-radius:36px;border:1px solid #af936080;background:#fffaf0ed;padding:38px;gap:22px;box-shadow:0 0 0 9px #fff4,0 18px 55px #67543812!important;}
+.game .result-panel .text-5xl {font-size:40px;}
+.game .result-timers .national-day-numerals {font-size:78px;}
+.game .result-timers article {border-color:#af936040;}
+.game .official-year-number {display:block;width:210px;max-width:100%;height:auto;margin:5px auto;}
+.game .result-detail {padding:4px 0;}
+.game .result-detail>span:first-child {font-size:10px;}
+.game-stage[data-screen=leaderboard] {max-width:760px;margin-top:80px;padding:40px;background:#fffaf0ed;border:1px solid #af936080;border-radius:30px;}
+.game .leaderboard-screen h1 {font-size:48px;}
+.game .leaderboard-screen .text-right {text-align:center;}
+.game .leaderboard-scroll {max-height:400px;}
+.game-stage[data-screen=countdown] {position:static;}
+.game[data-screen=countdown] .countdown-number {color:var(--game-primary);text-shadow:none;font-family:"National Day Oswald",sans-serif;}
+.game[data-screen=countdown] .countdown-number::before {content:"";position:absolute;left:50%;top:50%;width:530px;height:530px;transform:translate(-50%,-50%);border:1px solid #af936060;border-radius:50%;box-shadow:0 0 0 35px #fff2,0 0 0 36px #af936040;z-index:-1;}
 
-/* Distinct exhibition chapters: arrivals, craft demonstration, field, majlis, honours. */
-.game[data-screen=home] .game-stage{align-self:flex-end;margin-right:10%;margin-top:150px;margin-bottom:320px;max-width:650px;min-height:0;padding-bottom:0;}
-.game[data-screen=home] .game-stage>div{border-radius:12px 100px 12px 12px;border-top:7px solid var(--game-accent);}
-.game[data-screen=instructions]{background-image:linear-gradient(115deg,#e7e1cd 0 46%,#f8f2df 46% 100%);}
-.game[data-screen=instructions] .game-stage{align-self:flex-start;margin:130px 0 380px 8%;max-width:700px;min-height:0;padding:0;}
-.game[data-screen=instructions] .instruction-panel{border-radius:4px;background:#fffdf5;border-left:7px solid #ab2328;border-top:0;box-shadow:16px 16px 0 #b9aa8555;}
-.game[data-screen=instructions] .game-stage h1{text-align:left;align-self:flex-start;font-size:64px;max-width:500px;}
-.game[data-screen=playing]{background-image:linear-gradient(180deg,#e7e1cd 0%,#f9f4e4 65%,#c5b38c 100%);}
-.game[data-screen=playing] .game-stage{margin:100px 0 390px;min-height:0;}
-.game[data-screen=playing] .timer-card{border-radius:100px 100px 8px 8px;}
-.game[data-screen=result]{background-image:radial-gradient(ellipse at 50% 33%,#fff9e8 0 35%,#dbccb0 80%);}
-.game[data-screen=result] .game-stage{min-height:0;margin:100px 0 450px;max-width:850px;}
-.game[data-screen=result] .result-panel{border-radius:160px 160px 18px 18px;background:#fffaf0;border:2px solid #af9360;box-shadow:0 0 0 12px #fff5,0 0 0 14px #af936066!important;}
-.game[data-screen=leaderboard]{background-image:linear-gradient(90deg,#b6aa8d 0 8%,#f7f0df 8% 92%,#b6aa8d 92%);}
-.game[data-screen=leaderboard] .game-stage{margin:100px 0 410px;min-height:0;max-width:650px;border-radius:110px 110px 0 0;background:#fffdf4;padding:60px 35px;}
+/* Landscape uses the same central axis and a shorter, panoramic scene. */
+@container gamecanvas (min-width:1400px) {
+  .game {padding-top:14px;padding-bottom:230px;}
+  .game .adcb-logo {width:190px;max-height:70px;}
+  .game>[data-decoration=headerLogo]>div {padding:6px 0 12px;}
+  .game .event-name {font-size:12px;}
+  .game>[data-decoration=eventName]::after {margin-top:14px;}
+  .game .game-stage {margin:30px auto 0;max-width:1080px;}
+  .game h1 {font-size:46px;}
+  .game .home-screen {max-width:1000px;padding:28px 40px;gap:18px;}
+  .game .home-headline {font-size:48px;max-width:none;}
+  .game-stage[data-screen=home] .mt-4 {font-size:17px;margin-top:14px;max-width:800px;}
+  .game .registration-fields {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;}
+  .game .registration-consent {grid-column:1/-1;max-width:800px;margin:auto;}
+  .game .home-actions {max-width:600px;}
+  .game .home-actions button {min-height:54px;padding:12px 20px;}
+  .game .instruction-panel {padding:28px;font-size:20px;}
+  .instruction-steps {flex-direction:row;}
+  .instruction-step {flex:1;min-width:0;font-size:inherit;padding:18px 30px;}
+  .instruction-step+.instruction-step {border-top:0;border-left:1px solid #b3a17d50;}
+  .instructions-screen h1 {margin-bottom:24px;}
+  .instruction-range {margin:18px auto;}
+  .game .instruction-begin {min-height:60px;padding:14px;}
+  .game .double-challenge h1 {max-width:none;}
+  .game .double-challenge .eyebrow {margin-bottom:12px;font-size:11px;}
+  .game .challenge-instruction {margin:14px auto 20px;font-size:18px;}
+  .game .timer-pair {padding:18px;max-width:920px;margin:auto;}
+  .game .timer-card {padding:10px 24px;}
+  .game .timer-card .digital-stopwatch {padding-top:12px;}
+  .game .timer-card .national-day-numerals {font-size:90px;}
+  .game .round-heading {gap:8px;min-height:36px;}
+  .game .timer-card>p {margin:12px 0 18px;}
+  .game .timer-action {min-height:58px;}
+  .game .tolerance-note {margin-top:18px;font-size:14px;}
+  .game-stage[data-screen=result] {max-width:900px;margin-top:20px;}
+  .game .result-panel {padding:18px;gap:6px;}
+  .game .result-panel .text-5xl {font-size:30px;}
+  .game .result-timers .national-day-numerals {font-size:50px;}
+  .game .official-year-number {width:90px;}
+  .game .result-panel button {padding:12px 20px;}
+  .game-stage[data-screen=leaderboard] {max-width:800px;padding:28px;}
+  .game .leaderboard-scroll {max-height:250px;}
+}

@@ -3,7 +3,7 @@ import {EditorViewport,previewScreens,type PreviewScreen} from './EditorViewport
 import {ArtworkStudio,wireArtworkCanvas} from './ArtworkStudio';
 import {editableKeys,optionalElements,hideKey,textFields as fields} from '../shared/editor';
 import {useEffect,useRef,useState} from 'react';
-import {previewURL,validate,type Settings} from './lib/settings';
+import {previewURL,validate,normalize,type Settings} from './lib/settings';
 import {isHosted} from './lib/runtime';
 import {assetURL,uploadArtwork} from './lib/assets';
 
@@ -38,7 +38,7 @@ export function PageEditor({mode,draft,onChange,onSave,onPublish,onReload,note,o
  const transparency=draft.pageTransparency[screen]??25;
  function resize(value:string){const sizes={...draft.textSizes,[screen]:{...draft.textSizes[screen]}};if(value==='')delete sizes[screen][selected];else sizes[screen][selected]=Number(value);onChange({...draft,textSizes:sizes});}
  return <section><h1>{mode}</h1><p>Click outlined text in the frozen preview to edit. Click outside to commit; Escape cancels. Preview never starts a game or saves a participant. Save draft keeps changes unpublished. {isHosted?'Publish design updates connected game devices through Cloudflare.':'Publish design includes all current edits on this browser.'}</p><div className="editor-layout"><div className="editor-controls">
- <label>Shared design format<select aria-label="Shared design format" value={draft.designFormat} onChange={e=>onChange({...draft,designFormat:e.target.value as Settings['designFormat']})}><option value="portrait">Portrait · 1080 × 1920</option><option value="landscape">Landscape · 1920 × 1080</option></select></label><p>One composition for every device. The whole design scales to fit, with extra space around it on screens with a different aspect ratio.</p>
+ <label>Shared design format<select aria-label="Shared design format" value={draft.designFormat} onChange={e=>onChange(normalize({...draft,designFormat:e.target.value as Settings['designFormat']}))}><option value="portrait">Portrait · 1080 × 1920</option><option value="landscape">Landscape · 1920 × 1080</option></select></label><p>One composition for every device. The whole design scales to fit, with extra space around it on screens with a different aspect ratio.</p>
  <label>Page<select aria-label="Page" value={screen} onChange={e=>{setScreen(e.target.value);setSelected('');setSelectedArtwork('');}}>{Object.keys(fields).map(k=><option key={k}>{k}</option>)}</select></label>
  {screen==='result'&&<label>Result to preview<select aria-label="Result to preview" value={outcome} onChange={e=>setOutcome(e.target.value)}><option value="win">Qualified</option><option value="lose">Try again</option></select></label>}
  {mode==='Page editor'?<>{screen==='home'&&<label>Page headline<input maxLength={100} onFocus={()=>selectElement("title")} value={draft.title} onChange={e=>update('title',e.target.value)}/></label>}{fields[screen].map(([key,label])=><label key={key}>{label}{key==='instructions'?<textarea rows={8} onFocus={()=>selectElement(key)} value={draft.text[key]} onChange={e=>editText(key,e.target.value)}/>:<input value={draft.text[key]} maxLength={2000} onFocus={()=>selectElement(key)} onChange={e=>editText(key,e.target.value)}/>}</label>)}<p>Use {'{target}'} to insert the configured target. Capitalisation is preserved. Fields can be cleared.</p>

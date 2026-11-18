@@ -234,7 +234,7 @@ function HomeScreen({
   const valid = consent && player.fullName.trim().length > 1 && validEmail(player.email) && /^[+\d][\d ()-]{6,19}$/.test(player.phoneNumber.trim()) && (!emailRequired||validNationality(player.nationality));
 
   return (
-    <div className="flex w-full flex-col items-center gap-8" style={{paddingBottom:keyboardField?360:undefined}}>
+    <div className="home-screen flex w-full flex-col items-center gap-8" style={{paddingBottom:keyboardField?360:undefined}}>
       <div className="text-center">
         <h1 className="text-display home-headline font-black leading-[1.05]" style={{ color: BRAND }}>
           <CampaignText page="home" name="title">{getSettings().title}</CampaignText>
@@ -245,10 +245,10 @@ function HomeScreen({
       </div>
 
       <div
-        className="w-full rounded-2xl border-2 border-[#333f48]/40 bg-white p-6"
+        className="registration-panel w-full rounded-2xl border-2 border-[#333f48]/40 bg-white p-6"
         style={{ boxShadow: "var(--shadow-elegant)" }}
       >
-        <div className="flex flex-col gap-4">
+        <div className="registration-fields flex flex-col gap-4">
           <Field
             label="FULL NAME"
             required
@@ -263,11 +263,11 @@ function HomeScreen({
           {<><Field label="EMAIL ADDRESS" type="email" required maxLength={254} autoCapitalize="none" value={player.email} inputRef={el=>{inputs.current.email=el;}} onFocus={()=>openKeyboard('email')} onChange={email=>setPlayer({...player,email})} placeholder="ENTER EMAIL ADDRESS"/>{player.email&&!validEmail(player.email)&&<p role="alert" className="text-sm text-red-700">Enter a valid email address, such as name@example.com.</p>}</>}
           <Field label="PHONE NUMBER" type="tel" required maxLength={20} value={player.phoneNumber} inputRef={el=>{inputs.current.phoneNumber=el;}} onFocus={()=>openKeyboard('phoneNumber')} onChange={phoneNumber=>setPlayer({...player,phoneNumber})} placeholder="ENTER PHONE NUMBER"/>
           {emailRequired&&<NationalitySelect value={player.nationality} onChange={nationality=>setPlayer({...player,nationality})} onOpen={closeKeyboard} disabled={isFrozen||!keyboardEnabled}/>}
-          <label className="registration-consent"><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)}/>I agree to my name, email address, phone number and score being stored for this event{emailRequired?' together with my nationality':''}. Only my name and score appear on the public leaderboard.</label>
+          <label className="registration-consent"><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)}/><span>I agree to my name, email address, phone number and score being stored for this event{emailRequired?' together with my nationality':''}. Only my name and score appear on the public leaderboard.</span></label>
         </div>
       </div>
 
-      <div className="flex w-full flex-col gap-3">
+      <div className="home-actions flex w-full flex-col gap-3">
         <button disabled={!valid&&!isFrozen} onClick={()=>{if(valid||isFrozen)onStart();}} className={primaryBtn}>
           {<CampaignText page="home" name="begin">{copy("begin")}</CampaignText>}
         </button>
@@ -304,7 +304,7 @@ function Field({
   required?:boolean;
 }) {
   return (
-    <div className="flex flex-col gap-2">
+    <div className="registration-field flex flex-col gap-2">
       <label className="text-[10px] tracking-[0.3em] text-neutral-600 text-display">
         {label}
       </label>
@@ -420,11 +420,14 @@ function LeaderboardScreen({
 function InstructionsScreen({ onBegin }: { onBegin: () => void }) {
   useSpaceKey(onBegin);
   return (
-    <div className="flex w-full flex-col items-center gap-8 text-center">
+    <section className="instructions-screen flex w-full flex-col items-center gap-8 text-center">
       <h1 className="text-display text-4xl font-black" style={{ color: BRAND }}>{<CampaignText page="instructions" name="instructionsTitle">{copy("instructionsTitle")}</CampaignText>}</h1>
-      <div className="instruction-panel w-full rounded-xl border p-4 text-left whitespace-pre-line"><CampaignText page="instructions" name="instructions">{copy("instructions")}</CampaignText></div>
-      <ArcadeButton onClick={onBegin} label={<CampaignText page="instructions" name="begin">{copy("begin")}</CampaignText>} />
-    </div>
+      <div className="instruction-panel w-full">
+        <CampaignText page="instructions" name="instructions"><span className="instruction-steps">{copy('instructions').split('\n').filter(line=>line.trim()).map((line,index)=><span className="instruction-step" key={index}><span className="instruction-step-number" aria-hidden="true">{String(index+1).padStart(2,'0')}</span><span>{line}</span></span>)}</span></CampaignText>
+      </div>
+      <p className="instruction-range">Aim for {(TARGET_TIME-TOLERANCE).toFixed(3)}–{(TARGET_TIME+TOLERANCE).toFixed(3)} seconds in each round.</p>
+      <button className={primaryBtn+' instruction-begin'} onClick={onBegin}><CampaignText page="instructions" name="begin">{copy('begin')}</CampaignText></button>
+    </section>
   );
 }
 
@@ -568,7 +571,7 @@ function Row({
   highlight?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between text-xs">
+    <div className="result-detail flex flex-col items-center justify-center gap-1 text-xs">
       <span className="text-display tracking-[0.25em] text-neutral-600">{label}</span>
       <span
         className="text-mono font-bold tabular-nums"
