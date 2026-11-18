@@ -260,3 +260,19 @@ html:has(.game-viewport){font-size:16px}
 .game[data-screen=countdown] .event-name{color:#fff9ed;}
 .game[data-screen=countdown] .countdown-number{color:#fff9ed;text-shadow:0 8px 0 #ab2328;}
 .game[data-screen=countdown]{background-image:linear-gradient(#333f48e8,#333f48e8)!important;}
+
+/* Distinct exhibition chapters: arrivals, craft demonstration, field, majlis, honours. */
+.game[data-screen=home] .game-stage{align-self:flex-end;margin-right:10%;margin-top:150px;margin-bottom:320px;max-width:650px;min-height:0;padding-bottom:0;}
+.game[data-screen=home] .game-stage>div{border-radius:12px 100px 12px 12px;border-top:7px solid var(--game-accent);}
+.game[data-screen=instructions]{background-image:linear-gradient(115deg,#e7e1cd 0 46%,#f8f2df 46% 100%);}
+.game[data-screen=instructions] .game-stage{align-self:flex-start;margin:130px 0 380px 8%;max-width:700px;min-height:0;padding:0;}
+.game[data-screen=instructions] .instruction-panel{border-radius:4px;background:#fffdf5;border-left:7px solid #ab2328;border-top:0;box-shadow:16px 16px 0 #b9aa8555;}
+.game[data-screen=instructions] .game-stage h1{text-align:left;align-self:flex-start;font-size:64px;max-width:500px;}
+.game[data-screen=playing]{background-image:linear-gradient(180deg,#e7e1cd 0%,#f9f4e4 65%,#c5b38c 100%);}
+.game[data-screen=playing] .game-stage{margin:100px 0 390px;min-height:0;}
+.game[data-screen=playing] .timer-card{border-radius:100px 100px 8px 8px;}
+.game[data-screen=result]{background-image:radial-gradient(ellipse at 50% 33%,#fff9e8 0 35%,#dbccb0 80%);}
+.game[data-screen=result] .game-stage{min-height:0;margin:100px 0 450px;max-width:850px;}
+.game[data-screen=result] .result-panel{border-radius:160px 160px 18px 18px;background:#fffaf0;border:2px solid #af9360;box-shadow:0 0 0 12px #fff5,0 0 0 14px #af936066!important;}
+.game[data-screen=leaderboard]{background-image:linear-gradient(90deg,#b6aa8d 0 8%,#f7f0df 8% 92%,#b6aa8d 92%);}
+.game[data-screen=leaderboard] .game-stage{margin:100px 0 410px;min-height:0;max-width:650px;border-radius:110px 110px 0 0;background:#fffdf4;padding:60px 35px;}

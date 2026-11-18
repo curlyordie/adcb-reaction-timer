@@ -19,7 +19,7 @@ export async function initializeEvents(env:DatabaseEnv){
   ]);
   // Publish the requested exhibition composition once for existing installations.
   // A version marker prevents subsequent deployments from overwriting editor work.
-  const redesignId='adcb-exhibition-composition-v3';
+  const redesignId='adcb-exhibition-composition-v4';
   const applied=await env.DB.prepare('SELECT id FROM design_versions WHERE id=?').bind(redesignId).first();
   if(!applied){
    const profile=await env.DB.prepare("SELECT active_id,draft FROM event_profiles WHERE id='aaihex-2026'").first<{active_id:string;draft:string}>();
