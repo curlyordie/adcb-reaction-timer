@@ -245,3 +245,18 @@ html:has(.game-viewport){font-size:16px}
 .game .result-panel{border-radius:64px 64px 18px 18px;background:#fff9edeb;}
 .game-stage[data-screen=leaderboard]{background:#fff9ede8;border-radius:56px 56px 16px 16px;padding:36px;}
 .game>[data-decoration=headerLogo]{mix-blend-mode:multiply;}
+
+/* A shared exhibition identity, with a different scene and silhouette per chapter. */
+.game[data-screen=home] .game-stage{padding-top:0;}
+.game[data-screen=instructions] .game-stage{max-width:680px;}
+.game[data-screen=instructions] .instruction-panel{border-radius:100px 20px 100px 20px;background:#fff9edf2;border-top:5px solid var(--game-accent);padding:56px 40px;}
+.game[data-screen=playing] .game-stage{padding-bottom:180px;}
+.game[data-screen=playing] .timer-pair{gap:28px;}
+.game[data-screen=playing] .timer-card{border-radius:16px;border-top:6px solid var(--game-accent);box-shadow:0 20px 50px #604b231a;}
+.game[data-screen=result] .result-panel{border-radius:120px 120px 20px 20px;border-top:6px solid var(--game-accent);}
+.game[data-screen=leaderboard] .game-stage{border-radius:16px;border-top:6px solid var(--game-accent);box-shadow:0 20px 70px #604b2320;}
+.game[data-screen=leaderboard] h1{letter-spacing:.08em;}
+.game[data-screen=countdown]{background-color:#333f48!important;}
+.game[data-screen=countdown] .event-name{color:#fff9ed;}
+.game[data-screen=countdown] .countdown-number{color:#fff9ed;text-shadow:0 8px 0 #ab2328;}
+.game[data-screen=countdown]{background-image:linear-gradient(#333f48e8,#333f48e8)!important;}
