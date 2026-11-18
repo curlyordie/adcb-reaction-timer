@@ -218,3 +218,15 @@
 @media(max-width:600px){.admin .editor-controls{max-height:none}}
 
 html:has(.game-viewport){font-size:16px}
+
+/* Desert exhibition treatment; colours and artwork remain editable in Admin. */
+.game {background-image:url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMzQ0IiBoZWlnaHQ9IjE4NzgiIHZpZXdCb3g9IjAgMCAxMzQ0IDE4NzgiPjxkZWZzPjxmaWx0ZXIgaWQ9ImdyYWluIj48ZmVUdXJidWxlbmNlIHR5cGU9ImZyYWN0YWxOb2lzZSIgYmFzZUZyZXF1ZW5jeT0iLjciIG51bU9jdGF2ZXM9IjMiIHN0aXRjaFRpbGVzPSJzdGl0Y2giLz48ZmVDb2xvck1hdHJpeCB0eXBlPSJzYXR1cmF0ZSIgdmFsdWVzPSIwIi8+PGZlQ29tcG9uZW50VHJhbnNmZXI+PGZlRnVuY0EgdHlwZT0ibGluZWFyIiBzbG9wZT0iLjExIi8+PC9mZUNvbXBvbmVudFRyYW5zZmVyPjxmZUJsZW5kIGluPSJTb3VyY2VHcmFwaGljIiBtb2RlPSJtdWx0aXBseSIvPjwvZmlsdGVyPjwvZGVmcz48ZyBmaWx0ZXI9InVybCgjZ3JhaW4pIj48cGF0aCBmaWxsPSIjZTdlMWNkIiBkPSJNMCAwaDEzNDR2MTg3OEgweiIvPjxwYXRoIGZpbGw9IiNmN2YwZDciIGQ9Ik0wIDE1OTBsMjcyLTE1NWMxNjYtOTkgMjY0LTMyIDQwNS04MSAxNjEtNTYgNDMxLTI0OSA2NjctMzc1djg5OUgweiIvPjwvZz48L3N2Zz4K");background-size:cover;background-position:center;}
+.game .event-name {letter-spacing:.25em;font-weight:700;padding:10px 24px;border-bottom:2px solid var(--game-accent);}
+.game .instruction-panel,.game .result-panel {border-color:#8c63354d;box-shadow:0 16px 45px #62452018;background-color:#fff9edeb;}
+.game input:not([type=checkbox]) {background:#fffaf0;border-color:#84674466;}
+.game button {transition:transform .18s,box-shadow .18s;}
+.game button:enabled:hover {filter:brightness(1.05);}
+.game button:focus-visible,.game input:focus-visible {outline:3px solid var(--game-accent);outline-offset:4px;}
+.game .registration-consent {color:var(--game-primary);}
+
+.game .official-year-number{display:block;width:260px;max-width:100%;height:auto;margin:12px auto;object-fit:contain;}

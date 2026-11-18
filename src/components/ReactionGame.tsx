@@ -162,7 +162,7 @@ export function ReactionGame() {
 
   return (
     <div style={{"--game-primary":getSettings().primary,"--game-accent":getSettings().accent,"--game-bg":getSettings().background,"--panel-alpha":1-(getSettings().pageTransparency[screen]??25)/100,backgroundColor:getSettings().background,backgroundImage:getSettings().artwork ? `linear-gradient(#0004,#0004), url(${assetURL(getSettings().artwork)})` : undefined,backgroundSize:"cover",backgroundPosition:"center"} as React.CSSProperties} data-screen={screen} className="game relative flex min-h-screen w-full flex-col items-center overflow-hidden bg-white px-6 pb-10">
-      <DesignElements page={screen}/><div className="etihad-lockup"><img src={assetURL("/brand/eid-al-etihad-80a68cbd8c.png")} alt="Eid Al Etihad"/></div>
+      <DesignElements page={screen}/>
       {connectionError&&<p role="alert" className="game-connection-error">{connectionError}</p>}
       {saving&&<p role="status">Saving score to {isHosted?'Cloudflare':'this browser'}…</p>}
       {pendingTime!==null&&!saving&&<button className={primaryBtn} onClick={()=>{void syncBest();}}>Retry saving score</button>}
@@ -231,7 +231,7 @@ function HomeScreen({
   useEffect(()=>{let startedInside=false;const inside=(event:MouseEvent)=>event.composedPath().some(node=>node instanceof HTMLElement&&node.matches('.touch-keyboard,[data-registration-input]'));const pointer=(event:PointerEvent)=>{startedInside=inside(event);};const outside=(event:MouseEvent)=>{if(!startedInside&&!inside(event))setKeyboardField(null);};const escape=(event:KeyboardEvent)=>{if(event.key==='Escape')setKeyboardField(null);};document.addEventListener('pointerdown',pointer);document.addEventListener('click',outside);window.addEventListener('keydown',escape);return()=>{document.removeEventListener('pointerdown',pointer);document.removeEventListener('click',outside);window.removeEventListener('keydown',escape);};},[]);
 
   const emailRequired=isHosted&&hostedContent?.eventId==='jiu-jitsu';
-  const valid = consent && player.fullName.trim().length > 1 && (!emailRequired||(validEmail(player.email)&&validNationality(player.nationality)));
+  const valid = consent && player.fullName.trim().length > 1 && validEmail(player.email) && /^[+\d][\d ()-]{6,19}$/.test(player.phoneNumber.trim()) && (!emailRequired||validNationality(player.nationality));
 
   return (
     <div className="flex w-full flex-col items-center gap-8" style={{paddingBottom:keyboardField?360:undefined}}>
@@ -260,9 +260,10 @@ function HomeScreen({
             placeholder="ENTER FULL NAME"
             autoCapitalize="characters"
           />
-          {emailRequired&&<><Field label="EMAIL ADDRESS" type="email" required maxLength={254} autoCapitalize="none" value={player.email} inputRef={el=>{inputs.current.email=el;}} onFocus={()=>openKeyboard('email')} onChange={email=>setPlayer({...player,email})} placeholder="ENTER EMAIL ADDRESS"/>{player.email&&!validEmail(player.email)&&<p role="alert" className="text-sm text-red-700">Enter a valid email address, such as name@example.com.</p>}</>}
+          {<><Field label="EMAIL ADDRESS" type="email" required maxLength={254} autoCapitalize="none" value={player.email} inputRef={el=>{inputs.current.email=el;}} onFocus={()=>openKeyboard('email')} onChange={email=>setPlayer({...player,email})} placeholder="ENTER EMAIL ADDRESS"/>{player.email&&!validEmail(player.email)&&<p role="alert" className="text-sm text-red-700">Enter a valid email address, such as name@example.com.</p>}</>}
+          <Field label="PHONE NUMBER" type="tel" required maxLength={20} value={player.phoneNumber} inputRef={el=>{inputs.current.phoneNumber=el;}} onFocus={()=>openKeyboard('phoneNumber')} onChange={phoneNumber=>setPlayer({...player,phoneNumber})} placeholder="ENTER PHONE NUMBER"/>
           {emailRequired&&<NationalitySelect value={player.nationality} onChange={nationality=>setPlayer({...player,nationality})} onOpen={closeKeyboard} disabled={isFrozen||!keyboardEnabled}/>}
-          <label className="registration-consent"><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)}/>{emailRequired?'I agree to my full name, email address, nationality and score being stored for this event. Only my full name and score will appear on the public leaderboard.':isHosted?'I agree to my full name and score being stored for this event. My full name and score will appear on the public leaderboard.':'I agree to store my full name and score on this device for this demo. My name and score will appear on its leaderboard.'}</label>
+          <label className="registration-consent"><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)}/>I agree to my name, email address, phone number and score being stored for this event{emailRequired?' together with my nationality':''}. Only my name and score appear on the public leaderboard.</label>
         </div>
       </div>
 
@@ -274,7 +275,7 @@ function HomeScreen({
           {<CampaignText page="home" name="leaderboard">{copy("leaderboard")}</CampaignText>}
         </button></Decoration>
       </div>
-      {keyboardField&&<TouchKeyboard field={keyboardField} value={player[keyboardField]} input={inputs.current[keyboardField]} onChange={value=>setPlayer({...player,[keyboardField]:value})} onClose={closeKeyboard} onNext={()=>{if(emailRequired&&keyboardField==='fullName'){setKeyboardField('email');inputs.current.email?.focus();}else closeKeyboard();}}/>}
+      {keyboardField&&<TouchKeyboard field={keyboardField} value={player[keyboardField]} input={inputs.current[keyboardField]} onChange={value=>setPlayer({...player,[keyboardField]:value})} onClose={closeKeyboard} onNext={()=>{if(emailRequired&&keyboardField==='fullName'){setKeyboardField('email');inputs.current.email?.focus();}else if(keyboardField==='email'){setKeyboardField('phoneNumber');inputs.current.phoneNumber?.focus();}else closeKeyboard();}}/>}
     </div>
   );
 }
@@ -536,7 +537,7 @@ function ResultScreen({
         className="text-mono result-number font-black leading-none tabular-nums"
         style={{ color: BRAND }}
       >
-        {getSettings().gameMode==='double'?(win?'55':'TRY AGAIN'):formatTime(time)}
+        {getSettings().gameMode==='double'?(win?<img className="official-year-number" src={assetURL('/brand/official-year-55.png')} alt="55"/>:'TRY AGAIN'):formatTime(time)}
       </div>
 
       <div className="flex w-full flex-col gap-2 rounded-xl border border-[#333f48]/30 bg-white p-4">
