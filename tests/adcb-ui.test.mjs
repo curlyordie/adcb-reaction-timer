@@ -16,11 +16,11 @@ test('ADCB branding, two visible timers, independent passes, inclusive tolerance
  assert.ok((await page.getByRole('timer').first().locator('.national-day-numerals').evaluate(el=>getComputedStyle(el).fontFamily)).includes('National Day Oswald'));
  await stopAt(page,1,4.94);await page.getByText('NOT QUITE! GIVE IT ANOTHER GO.',{exact:true}).waitFor();let records=await page.evaluate(()=>JSON.parse(localStorage.getItem('adcb-records')));assert.equal(records[0].qualified,false);assert.deepEqual(records[0].roundTimes,[4.94]);
  await page.getByRole('button',{name:'RETRY',exact:true}).click();assert.equal(await page.getByRole('timer').first().getAttribute('data-time'),'0.000');await stopAt(page,1,4.95);
- await page.getByText('PERFECT! FIRST 5 COMPLETE. Start Round 2.').waitFor();assert.equal(await page.getByRole('timer').nth(1).getAttribute('data-time'),'0.000');await stopAt(page,2,5.05);
- await page.getByText('5 + 5 COMPLETE! YOU DID IT!',{exact:true}).waitFor();records=await page.evaluate(()=>JSON.parse(localStorage.getItem('adcb-records')));assert.equal(records.length,1);assert.equal(records[0].qualified,true);assert.deepEqual(records[0].roundTimes,[4.95,5.05]);
+ await page.getByText('FIRST 50 YEARS COMPLETE. Now celebrate the next 5.').waitFor();assert.equal(await page.getByRole('timer').nth(1).getAttribute('data-time'),'0.000');await stopAt(page,2,5.05);
+ await page.getByText('55 YEARS COMPLETE!',{exact:true}).waitFor();records=await page.evaluate(()=>JSON.parse(localStorage.getItem('adcb-records')));assert.equal(records.length,1);assert.equal(records[0].qualified,true);assert.deepEqual(records[0].roundTimes,[4.95,5.05]);
  await page.screenshot({path:'/tmp/adcb-win.png',fullPage:true});
  await page.getByRole('button',{name:'RETRY',exact:true}).click();await stopAt(page,1,5);await stopAt(page,2,5.06);await page.getByText('NOT QUITE! GIVE IT ANOTHER GO.',{exact:true}).waitFor();records=await page.evaluate(()=>JSON.parse(localStorage.getItem('adcb-records')));assert.deepEqual(records[0].roundTimes,[4.95,5.05]);
- await page.getByRole('button',{name:'HOME',exact:true}).click();assert.equal(await page.getByPlaceholder('ENTER FULL NAME').inputValue(),'');await page.getByRole('button',{name:'VIEW LEADERBOARD',exact:true}).click();await page.getByText('ADCB PLAYER',{exact:true}).waitFor();assert.deepEqual(errors,[]);
+ await page.getByRole('button',{name:'HOME',exact:true}).click();assert.equal(await page.getByPlaceholder('ENTER FULL NAME').inputValue(),'');await page.getByRole('button',{name:'VIEW UNION CHAMPIONS',exact:true}).click();await page.getByText('ADCB PLAYER',{exact:true}).waitFor();assert.deepEqual(errors,[]);
  }finally{await context.close();}
 });
 test('standalone embeds ADCB logo, National Day art and fonts without external requests, including narrow screens',async()=>{

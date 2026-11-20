@@ -1,6 +1,8 @@
-# ADCB · AAIHEX 2026 · 5 + 5 Challenge
+# ADCB · AAIHEX 2026 · The 55 Years Challenge
 
 A two-stage precision game for the UAE's 55th National Day. Both timers remain visible side by side. Players start and stop Round 1, then unlock a fresh Round 2. Each must land within **4.950–5.050 seconds inclusive**. A miss in either round restarts the whole challenge. Target and tolerance are configurable in Admin.
+
+Round 01 pays tribute to the first 50 years of the Union (1971–2021); Round 02 celebrates the next 5 years (2021–2026). A winning result brings the player’s actual two times together into the official gold 55, with the caption **روح الاتحاد** and **٥٥ عاماً من الاتحاد**. Reduced-motion and frozen editor previews show the completed gold mark immediately. The equation is a symbolic tribute; qualification still depends on each independent round.
 
 Elapsed time comes from `performance.now()`, captured and judged at the same millisecond precision displayed to the player. The two times are never added to determine qualification. Leaderboards retain one best challenge per retry sequence, ranked by the greater absolute error of the two rounds. A one-round failed attempt cannot qualify. Both times appear in Admin reports and CSV exports.
 

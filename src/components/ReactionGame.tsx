@@ -1,4 +1,5 @@
 import {DoubleChallenge} from './DoubleChallenge';
+import {UnionWinMoment} from './UnionWinMoment';
 import {DesignElements} from './DesignElements';
 import {evaluateChallenge,passes} from '../../shared/challenge';
 import {validNationality} from '../../shared/countries';
@@ -52,10 +53,11 @@ const primaryBtn =
 const secondaryBtn =
   "text-display w-full rounded-xl px-6 py-4 text-sm font-semibold tracking-[0.2em] transition-all bg-white text-[#333f48] border-2 border-[#333f48] hover:bg-[#333f48]/5 active:scale-[0.98]";
 
-function Logo() {
+function Logo({page}:{page:string}) {
   return (
-    <div className="flex w-full justify-center pt-6 pb-4 select-none">
+    <div className="brand-header flex w-full flex-col items-center justify-center pt-6 pb-4 select-none">
       {getSettings().logo ? <img src={assetURL(getSettings().logo)} alt="ADCB — Abu Dhabi Commercial Bank" className="adcb-logo" /> : <img src={assetURL('/brand/adcb-logo-66a2316b71.png')} alt="ADCB — Abu Dhabi Commercial Bank" className="adcb-logo" /> }
+      <p className="union-context"><CampaignText page={page} name="unionContext">{copy('unionContext')}</CampaignText></p>
     </div>
   );
 }
@@ -167,7 +169,7 @@ export function ReactionGame() {
       {saving&&<p role="status">Saving score to {isHosted?'Cloudflare':'this browser'}…</p>}
       {pendingTime!==null&&!saving&&<button className={primaryBtn} onClick={()=>{void syncBest();}}>Retry saving score</button>}
       {idle&&<IdlePresentation/>}
-      <Decoration page={screen} name="headerLogo"><Logo /></Decoration><Decoration page={screen} name="eventName"><p className="event-name"><CampaignText page={screen} name="eventName">{getSettings().eventName}</CampaignText></p></Decoration>
+      <Decoration page={screen} name="headerLogo"><Logo page={screen}/></Decoration><Decoration page={screen} name="eventName"><p className="event-name"><CampaignText page={screen} name="eventName">{getSettings().eventName}</CampaignText></p></Decoration>
       {getSettings().decoration&&<Decoration page={screen} name="decoration"><img className="page-decoration" alt="Event decoration" src={assetURL(getSettings().decoration)}/></Decoration>}
       <div data-screen={screen} className="game-stage relative z-10 flex w-full max-w-md flex-1 flex-col items-center justify-center">
         {screen === "home" && (
@@ -535,13 +537,15 @@ function ResultScreen({
         <CampaignText page="result" name={win?"winner":"retry"}>{win ? copy("winner") : copy("retry")}</CampaignText>
       </div>
 
+      {getSettings().gameMode==='double'&&win?<UnionWinMoment roundTimes={roundTimes}/>:<>
       {getSettings().gameMode==='double'&&<div className="result-timers" aria-label="Challenge results">{[0,1].map(index=><article key={index}><span>ROUND 0{index+1}</span><DigitalStopwatch time={roundTimes[index]??0}/><strong>{roundTimes[index]===undefined?'NOT PLAYED':passes(roundTimes[index],TARGET_TIME,TOLERANCE)?'PASS':'MISSED'}</strong></article>)}</div>}
       <div
         className="text-mono result-number font-black leading-none tabular-nums"
         style={{ color: BRAND }}
       >
-        {getSettings().gameMode==='double'?(win?<img className="official-year-number" src={assetURL('/brand/official-year-55.png')} alt="55"/>:'TRY AGAIN'):formatTime(time)}
+        {getSettings().gameMode==='double'?'TRY AGAIN':formatTime(time)}
       </div>
+      </>}
 
       <div className="flex w-full flex-col gap-2 rounded-xl border border-[#333f48]/30 bg-white p-4">
         <Row label="TARGET" value={TARGET_TIME.toFixed(3)} />
@@ -608,7 +612,7 @@ function IdlePresentation(){
  const settings=getSettings();
  return <div className="idle-cover" style={{backgroundImage:settings.artwork?`linear-gradient(#0004,#0004), url(${assetURL(settings.artwork)})`:undefined,backgroundSize:'cover',backgroundPosition:'center'}}><div className="idle-heading"><h1>{copy('idleTitle')}</h1><p>{copy('idleWin')}</p></div>
  <fieldset disabled className="idle-local-scene" aria-label="Idle example scene" data-scene={page}>
- <Decoration page={page} name="headerLogo"><Logo/></Decoration><Decoration page={page} name="eventName"><p className="event-name">{settings.eventName}</p></Decoration>
+ <Decoration page={page} name="headerLogo"><Logo page={page}/></Decoration><Decoration page={page} name="eventName"><p className="event-name">{settings.eventName}</p></Decoration>
  {settings.decoration&&<Decoration page={page} name="decoration"><img className="page-decoration" src={assetURL(settings.decoration)} alt="Event decoration"/></Decoration>}
  <div className="idle-scene-stage" key={page}>
  {page==='home'&&<HomeScreen keyboardEnabled={false} player={{...EMPTY_PLAYER,fullName:'ALEX EXAMPLE',email:'demo@example.invalid',nationality:'AE'}} setPlayer={noop} onStart={noop} onLeaderboard={noop}/>}

@@ -186,7 +186,7 @@
 .game .decoration-hidden .decoration-hidden{opacity:1}
 .touch-keyboard{position:fixed;bottom:0;left:0;right:0;margin:0 auto;z-index:200;background:#edf3f9;border-top:3px solid var(--game-primary,#333f48);box-shadow:0 -8px 28px #16334f33;padding:12px 16px 12px;max-width:1200px;max-height:calc(var(--canvas-vh, 1vh) * 58);overflow:auto;color:#16334f;touch-action:manipulation}.touch-keyboard header{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:10px}.touch-keyboard header div{min-width:0}.touch-keyboard output{display:block;font-size:18px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:calc(var(--canvas-vw, 1vw) * 75)}.touch-keyboard header button{background:#fff;border:1px solid #a6bacb;border-radius:8px;padding:10px 16px;white-space:nowrap;min-height:44px}.keyboard-row{display:flex;justify-content:center;gap:6px;margin-top:6px}.keyboard-key{flex:1;min-width:0;min-height:48px;max-width:105px;border:1px solid #b5c9da;border-radius:8px;background:#fff;box-shadow:0 2px 0 #b5c9da;font-size:22px;font-weight:600;cursor:pointer;user-select:none;touch-action:manipulation}.keyboard-key:active{background:#cbddeb;box-shadow:none;transform:translateY(2px)}.keyboard-wide{flex:3;max-width:320px}.keyboard-actions .keyboard-key{font-size:16px;padding:4px}.keyboard-actions .keyboard-key:last-child{background:var(--game-primary,#333f48);color:white;max-width:160px}.keyboard-number-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;max-width:650px;margin:auto}.keyboard-number-grid .keyboard-key{max-width:none;min-height:50px}.number-keyboard{max-width:760px}@container gamecanvas (max-width:520px){.touch-keyboard{padding:8px 6px 8px}.keyboard-row{gap:3px}.keyboard-key{font-size:18px;min-height:44px}.keyboard-actions .keyboard-key{font-size:12px}.touch-keyboard output{font-size:15px}}
 .registration-consent{display:flex;align-items:flex-start;gap:12px;color:#16334f;font-size:14px;line-height:1.5;padding:6px 0;min-height:44px;cursor:pointer}.registration-consent input{width:24px;height:24px;flex-shrink:0;margin-top:1px;accent-color:var(--game-primary,#333f48);cursor:pointer}
-.game{min-height:calc(var(--canvas-vh, 1dvh) * 100)}.game-stage[data-screen=countdown]{position:static}.countdown-screen{position:absolute;inset:0;display:grid;place-items:center;text-align:center;pointer-events:none}.countdown-number{position:relative;z-index:2;width:100%;color:#fff;font-size:clamp(8rem,calc(var(--canvas-vmin, 1vmin) * 32),22rem);font-weight:900;line-height:1;text-align:center;text-shadow:0 4px 18px #0009}.countdown-screen>[data-decoration=countdownArtwork]{position:absolute;inset:0;display:grid;place-items:center}.countdown-screen .countdown-artwork{height:100%;max-height:calc(var(--canvas-vh, 1dvh) * 100);width:100%;object-fit:contain}.game-stage[data-screen=playing]{max-width:900px}.playing-screen{width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(32px,calc(var(--canvas-vh, 1vh) * 6),72px);padding:30px 0}.digital-stopwatch{width:100%;max-width:860px;min-width:0;padding:18px 20px 12px;border:8px solid #44474a;border-radius:18px;background:linear-gradient(155deg,#282a2d,#101113 75%);box-shadow:inset 0 3px 10px #000c,0 5px 0 #17181a,0 12px 30px #0007;user-select:none}.digital-stopwatch svg{display:block;width:100%;height:auto}.segment-on{fill:#ff6148;filter:drop-shadow(0 0 3px #ff523b99)}.segment-off{fill:#4d2522;opacity:.28}.stopwatch-units{margin-top:8px;color:#d6d7d8;text-align:center;font-family:Arial,sans-serif;letter-spacing:.22em;font-size:clamp(9px,calc(var(--canvas-vw, 1vw) * 1.3),13px)}.stopwatch-units span{margin:0 10px;color:#ff6148}.result-panel,.result-panel *{animation:none!important}.game-stage[data-screen=leaderboard]{max-width:560px;padding:24px 0 clamp(40px,calc(var(--canvas-vh, 1vh) * 10),110px)}.leaderboard-screen{margin:auto;width:100%}.leaderboard-scroll{max-height:min(calc(var(--canvas-vh, 1dvh) * 42),420px)}@container gamecanvas (max-width:520px){.digital-stopwatch{border-width:5px;padding:10px 8px 8px;border-radius:12px}.playing-screen{gap:38px}.game-stage[data-screen=leaderboard]{padding-bottom:40px}}
+.game{min-height:calc(var(--canvas-vh, 1dvh) * 100)}.game-stage[data-screen=countdown]{position:static}.countdown-screen{position:absolute;inset:0;display:grid;place-items:center;text-align:center;pointer-events:none}.countdown-number{position:relative;z-index:2;width:100%;color:#fff;font-size:clamp(8rem,calc(var(--canvas-vmin, 1vmin) * 32),22rem);font-weight:900;line-height:1;text-align:center;text-shadow:0 4px 18px #0009}.countdown-screen>[data-decoration=countdownArtwork]{position:absolute;inset:0;display:grid;place-items:center}.countdown-screen .countdown-artwork{height:100%;max-height:calc(var(--canvas-vh, 1dvh) * 100);width:100%;object-fit:contain}.game-stage[data-screen=playing]{max-width:900px}.playing-screen{width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:clamp(32px,calc(var(--canvas-vh, 1vh) * 6),72px);padding:30px 0}.digital-stopwatch{width:100%;max-width:860px;min-width:0;padding:18px 20px 12px;border:8px solid #44474a;border-radius:18px;background:linear-gradient(155deg,#282a2d,#101113 75%);box-shadow:inset 0 3px 10px #000c,0 5px 0 #17181a,0 12px 30px #0007;user-select:none}.digital-stopwatch svg{display:block;width:100%;height:auto}.segment-on{fill:#ff6148;filter:drop-shadow(0 0 3px #ff523b99)}.segment-off{fill:#4d2522;opacity:.28}.stopwatch-units{margin-top:8px;color:#d6d7d8;text-align:center;font-family:Arial,sans-serif;letter-spacing:.22em;font-size:clamp(9px,calc(var(--canvas-vw, 1vw) * 1.3),13px)}.stopwatch-units span{margin:0 10px;color:#ff6148}.result-panel{animation:none}.game-stage[data-screen=leaderboard]{max-width:560px;padding:24px 0 clamp(40px,calc(var(--canvas-vh, 1vh) * 10),110px)}.leaderboard-screen{margin:auto;width:100%}.leaderboard-scroll{max-height:min(calc(var(--canvas-vh, 1dvh) * 42),420px)}@container gamecanvas (max-width:520px){.digital-stopwatch{border-width:5px;padding:10px 8px 8px;border-radius:12px}.playing-screen{gap:38px}.game-stage[data-screen=leaderboard]{padding-bottom:40px}}
 .admin input[type=checkbox]{display:inline-block;width:auto;margin:0 10px 0 0;vertical-align:middle;accent-color:#333f48}
 
 .admin .event-controls{margin-top:20px;border:1px solid #c0d2e0}.event-controls select{display:block;width:100%;max-width:480px;margin-top:8px;padding:12px;border:1px solid #bed0df;border-radius:8px;background:white;color:inherit;font:inherit}.event-controls button{margin:4px 8px 4px 0}.admin button:disabled{cursor:wait;opacity:.6}
@@ -359,4 +359,57 @@ html:has(.game-viewport){font-size:16px}
   .game .result-panel button {padding:12px 20px;}
   .game-stage[data-screen=leaderboard] {max-width:800px;padding:28px;}
   .game .leaderboard-scroll {max-height:250px;}
+}
+
+/* The Union tribute stays on the same central axis as the ADCB signature. */
+.game .union-context {margin:18px auto 0;font-size:18px;line-height:1.5;letter-spacing:.015em;}
+.game .timer-card>.round-tribute {min-height:3em;max-width:300px;font-size:15px;line-height:1.5;color:#eadfc8;margin:12px auto 0;}
+
+/* The two captured times meet once, then reveal the supplied official silhouette.
+   Saving/retrying a score does not remount or replay this moment. */
+.union-win {width:100%;}
+.union-win-stage {position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:230px;}
+.union-mark {width:250px;height:165px;flex-shrink:0;mask-size:contain;mask-position:center;mask-repeat:no-repeat;-webkit-mask-size:contain;-webkit-mask-position:center;-webkit-mask-repeat:no-repeat;background:linear-gradient(120deg,#94671d 0%,#bd923e 25%,#e8c979 48%,#ad7e2d 72%,#d5af5d 100%);}
+.game .union-official-caption {font-family:"National Day Arabic",sans-serif;font-size:22px;line-height:1.7;color:#926a28;margin:0;}
+.union-merging-scores {position:absolute;inset:0;pointer-events:none;}
+.union-merging-score {position:absolute;top:25px;left:50%;display:flex;flex-direction:column;align-items:center;gap:12px;opacity:0;}
+.union-merging-score>span {font-size:11px;letter-spacing:.18em;}
+.union-merging-score strong {font-family:"National Day Oswald",sans-serif;font-weight:500;font-size:76px;line-height:1.2;}
+.union-score-0 {--from-x:-135%;}
+.union-score-1 {--from-x:35%;}
+.game .union-equation {font-size:19px;line-height:1.6;margin:8px auto 0;font-variant-numeric:tabular-nums;}
+.game .union-arabic {font-family:"National Day Arabic",sans-serif;font-size:23px;line-height:1.8;margin:6px auto 0;}
+.union-win.is-animated .union-merging-score {animation:union-scores-meet 1.3s cubic-bezier(.4,0,.2,1) both;}
+.union-win.is-animated .union-mark {animation:union-turns-gold 2.7s ease-out both;}
+.union-win.is-animated .union-official-caption {animation:union-caption-arrives 2.7s ease-out both;}
+@keyframes union-scores-meet {
+  0%,28% {opacity:1;transform:translateX(var(--from-x)) scale(1);}
+  76% {opacity:1;transform:translateX(-50%) scale(.55);}
+  100% {opacity:0;transform:translateX(-50%) scale(.2);}
+}
+@keyframes union-turns-gold {
+  0%,31% {opacity:0;transform:scale(.6);filter:grayscale(1) brightness(.4);}
+  49% {opacity:1;transform:scale(1);filter:grayscale(1) brightness(.4);}
+  78% {opacity:1;transform:scale(1.035);filter:grayscale(0) brightness(1.12);}
+  100% {opacity:1;transform:scale(1);filter:none;}
+}
+@keyframes union-caption-arrives {
+  0%,65% {opacity:0;transform:translateY(8px);}
+  100% {opacity:1;transform:translateY(0);}
+}
+@media (prefers-reduced-motion:reduce) {
+  .union-win.is-animated .union-merging-score,
+  .union-win.is-animated .union-mark,
+  .union-win.is-animated .union-official-caption {animation:none;}
+}
+@container gamecanvas (min-width:1400px) {
+  .game .union-context {font-size:15px;margin-top:10px;}
+  .game .timer-card>.round-tribute {font-size:13px;min-height:2em;margin-top:10px;}
+  .union-win-stage {min-height:155px;gap:0;}
+  .union-mark {width:150px;height:100px;}
+  .game .union-official-caption {font-size:18px;}
+  .union-merging-score {top:0;gap:8px;}
+  .union-merging-score strong {font-size:62px;}
+  .game .union-equation {font-size:16px;margin-top:0;}
+  .game .union-arabic {font-size:19px;margin-top:0;}
 }

@@ -1,4 +1,5 @@
 import {exhibitionElements} from '../shared/exhibition';
+import {applyUnionTribute} from '../shared/union-tribute';
 import {baseline,original,normalize} from '../shared/domain';
 import {HttpError} from './auth';
 
@@ -31,6 +32,21 @@ export async function initializeEvents(env:DatabaseEnv){
      env.DB.prepare('INSERT OR IGNORE INTO design_versions(id,parent_id,settings,reason,created_at) VALUES(?,?,?,?,?)').bind(redesignId,profile.active_id,JSON.stringify(compose(published?.settings??profile.draft)),'Centred AAIHEX scenes and precision console',new Date().toISOString()),
      env.DB.prepare('INSERT OR IGNORE INTO event_design_versions(version_id,event_id) VALUES(?,?)').bind(redesignId,'aaihex-2026'),
      env.DB.prepare("UPDATE event_profiles SET active_id=?,draft=?,revision=revision+1 WHERE id='aaihex-2026' AND active_id=?").bind(redesignId,JSON.stringify(compose(profile.draft)),profile.active_id)
+    ]);
+   }
+  }
+  // A separate copy publication preserves the layout and all Admin adjustments
+  // made after the exhibition redesign. Historical versions remain recoverable.
+  const tributeId='adcb-union-tribute-v1';
+  if(!await env.DB.prepare('SELECT id FROM design_versions WHERE id=?').bind(tributeId).first()){
+   const profile=await env.DB.prepare("SELECT active_id,draft FROM event_profiles WHERE id='aaihex-2026'").first<{active_id:string;draft:string}>();
+   if(profile){
+    const published=await env.DB.prepare('SELECT settings FROM design_versions WHERE id=?').bind(profile.active_id).first<{settings:string}>();
+    const tribute=(settings:string)=>JSON.stringify(applyUnionTribute(normalize(JSON.parse(settings))));
+    await env.DB.batch([
+     env.DB.prepare('INSERT OR IGNORE INTO design_versions(id,parent_id,settings,reason,created_at) VALUES(?,?,?,?,?)').bind(tributeId,profile.active_id,tribute(published?.settings??profile.draft),'55 Years of the Union tribute',new Date().toISOString()),
+     env.DB.prepare('INSERT OR IGNORE INTO event_design_versions(version_id,event_id) VALUES(?,?)').bind(tributeId,'aaihex-2026'),
+     env.DB.prepare("UPDATE event_profiles SET active_id=?,draft=?,revision=revision+1 WHERE id='aaihex-2026' AND active_id=?").bind(tributeId,tribute(profile.draft),profile.active_id)
     ]);
    }
   }
