@@ -27,6 +27,18 @@ The build checks frontend/backend TypeScript, creates `dist`, and regenerates `a
 
 Tests need Chromium at `/usr/bin/chromium`, or set `CHROMIUM_PATH`. The ADCB suites cover gameplay boundaries, independent stages, failure/retry/best score, editor drag/layout persistence, uploads/backups, responsive/offline rendering, D1/authentication/publication, hosted browser behavior, and failed-score-save recovery. Historical FAB-specific test files remain in `tests` as reference and are not the current product's test entrypoints. The immutable original project and its original tests also remain outside this checkout at `/workspace/reference/fab_reaction_timer-main` in this onboarding machine.
 
+## Idle video and data use
+
+After 60 seconds with no pointer, keyboard, touch, input or scroll activity, the game shows the supplied AAIHEX / ADCB × MITE LED video. It loops silently, fits the display without cropping, and stops on a touch or key press. An abandoned game returns to a blank registration form. An unsaved result stays available for retrying its save.
+
+The 62.4-second H.264 video is included at `public/media/adcb-aaihex-idle-950f18fa3fc3.mp4`: **2.61 MiB**, reduced from 43.5 MiB while retaining 768 × 1024 pixels and 24 fps. The audio track is omitted because idle autoplay is muted. The original download is not deployed.
+
+Hosted mode downloads the complete video on first idle playback, saves it in browser Cache Storage, and plays a local Blob URL. Each loop and later idle session uses the local copy, including after a reload. The content-hashed URL has a one-year immutable cache header. Idle playback suspends publication polling and automatic failed-score retries; a hidden tab pauses playback. If storage is unavailable, the current page still reuses one in-memory copy. Cleared/evicted storage, another browser/device, or a changed video can require another download. Active hosted games still need small requests for registration, scores and publications.
+
+The standalone `adcb-reaction-timer.html` also embeds the video bytes, so its idle playback needs no network connection or separate media file. A one-time versioned settings update enables the video at 60 seconds for existing hosted/local designs while preserving their layout, artwork, records and history. Admin → Idle video can change or disable the timeout; when enabled it takes precedence over the registration-only inactivity return.
+
+To replace the supplied video, optimise an MP4 to H.264/yuv420p under Cloudflare Pages’ 25 MiB file limit, then run `node scripts/bundle-idle-video.mjs /path/to/optimised.mp4` from this checkout and rebuild. The script validates the codec, copies the file, and updates `shared/idle-video.json` with its size and SHA-256. Do not use an expiring transfer URL as the game’s video source.
+
 ## Brand and artwork
 
 ADCB master logo is extracted from the supplied ADCB Visual Style Guidelines, page 8, displayed on white with its proportions intact. Palette: red `#DA291C`, deeper red `#AB2328`, charcoal `#333F48`, white. Text uses supplied Museo Sans 100/300/500; heavier weights are synthesized from the supplied 500 face. Timer numerals use the supplied National Day Oswald variable font. Noto fonts are retained for National Day/Arabic artwork needs; DIN Next LT Arabic was not supplied.

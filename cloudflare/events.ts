@@ -1,5 +1,6 @@
 import {exhibitionElements} from '../shared/exhibition';
 import {applyUnionTribute} from '../shared/union-tribute';
+import {idleVideoPublicationId,withIdleVideo} from '../shared/idle-video';
 import {baseline,original,normalize} from '../shared/domain';
 import {HttpError} from './auth';
 
@@ -47,6 +48,18 @@ export async function initializeEvents(env:DatabaseEnv){
      env.DB.prepare('INSERT OR IGNORE INTO design_versions(id,parent_id,settings,reason,created_at) VALUES(?,?,?,?,?)').bind(tributeId,profile.active_id,tribute(published?.settings??profile.draft),'55 Years of the Union tribute',new Date().toISOString()),
      env.DB.prepare('INSERT OR IGNORE INTO event_design_versions(version_id,event_id) VALUES(?,?)').bind(tributeId,'aaihex-2026'),
      env.DB.prepare("UPDATE event_profiles SET active_id=?,draft=?,revision=revision+1 WHERE id='aaihex-2026' AND active_id=?").bind(tributeId,tribute(profile.draft),profile.active_id)
+    ]);
+   }
+  }
+  if(idleVideoPublicationId&&!await env.DB.prepare('SELECT id FROM design_versions WHERE id=?').bind(idleVideoPublicationId).first()){
+   const profile=await env.DB.prepare("SELECT active_id,draft FROM event_profiles WHERE id='aaihex-2026'").first<{active_id:string;draft:string}>();
+   if(profile){
+    const published=await env.DB.prepare('SELECT settings FROM design_versions WHERE id=?').bind(profile.active_id).first<{settings:string}>();
+    const enable=(value:string)=>JSON.stringify(withIdleVideo(normalize(JSON.parse(value))));
+    await env.DB.batch([
+     env.DB.prepare('INSERT OR IGNORE INTO design_versions(id,parent_id,settings,reason,created_at) VALUES(?,?,?,?,?)').bind(idleVideoPublicationId,profile.active_id,enable(published?.settings??profile.draft),'Bundled AAIHEX idle video · one minute',new Date().toISOString()),
+     env.DB.prepare('INSERT OR IGNORE INTO event_design_versions(version_id,event_id) VALUES(?,?)').bind(idleVideoPublicationId,'aaihex-2026'),
+     env.DB.prepare("UPDATE event_profiles SET active_id=?,draft=?,revision=revision+1 WHERE id='aaihex-2026' AND active_id=?").bind(idleVideoPublicationId,enable(profile.draft),profile.active_id)
     ]);
    }
   }

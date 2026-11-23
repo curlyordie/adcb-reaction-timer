@@ -1,3 +1,4 @@
+import {idleVideoPublicationId} from '../shared/idle-video';
 import {test,before,after} from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -125,10 +126,10 @@ test('hosted Union publication preserves existing layouts and timing settings, a
   ]);
   const response=await handleApi(new Request('https://adcb.example/api/public/content'),{DB:db} as any);
   assert.equal(response.status,200);const content:any=await response.json();
-  assert.equal(content.settings.title,'THE 55 YEARS CHALLENGE');assert.equal(content.versionId,'adcb-union-tribute-v1');
+  assert.equal(content.settings.title,'THE 55 YEARS CHALLENGE');assert.equal(content.versionId,idleVideoPublicationId??'adcb-union-tribute-v1');
   assert.deepEqual(content.settings.elements,old.elements);assert.equal(content.settings.target,5.2);assert.equal(content.settings.tolerance,.075);
   const profile:any=await db.prepare("SELECT * FROM event_profiles WHERE id='aaihex-2026'").first();
-  assert.equal(profile.revision,9);assert.deepEqual(JSON.parse(profile.draft).elements,draft.elements);
+  assert.equal(profile.revision,9+Number(Boolean(idleVideoPublicationId)));assert.deepEqual(JSON.parse(profile.draft).elements,draft.elements);
   assert.equal((await db.prepare("SELECT settings FROM design_versions WHERE id='custom-published'").first() as any).settings,raw);
   assert.equal((await db.prepare('SELECT count(*) AS n FROM records').first() as any).n,1);
   await db.prepare("UPDATE event_profiles SET draft=?,revision=10 WHERE id='aaihex-2026'").bind(raw).run();

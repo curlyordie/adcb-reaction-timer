@@ -11,5 +11,11 @@ for(const match of [...html.matchAll(/<link rel="stylesheet"[^>]*href="([^"]+)"[
 }
 const artwork={};
 for(const name of await readdir('public/brand')){if(!/\.(png|webp)$/.test(name))continue;const data=await readFile('public/brand/'+name);artwork['/brand/'+name]='data:image/'+(name.endsWith('.png')?'png':'webp')+';base64,'+data.toString('base64');}
-html=html.replace('<head>','<head><script>window.__ADCB_OFFLINE__=true;window.__ADCB_ARTWORK__='+JSON.stringify(artwork)+'</script>');
+const idleVideo=JSON.parse(await readFile('shared/idle-video.json','utf8'));
+let idleSource='';
+if(idleVideo.src){
+ const bytes=await readFile('public'+idleVideo.src);
+ idleSource='data:'+idleVideo.mime+';base64,'+bytes.toString('base64');
+}
+html=html.replace('<head>','<head><script>window.__ADCB_OFFLINE__=true;window.__ADCB_IDLE_VIDEO__='+JSON.stringify(idleSource)+';window.__ADCB_ARTWORK__='+JSON.stringify(artwork)+'</script>');
 await writeFile('adcb-reaction-timer.html',html);

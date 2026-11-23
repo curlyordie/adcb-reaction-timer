@@ -1,3 +1,6 @@
+import {IdleVideo} from './IdleVideo';
+import {hasIdleVideo} from '../lib/idle-video';
+import {useIdleVideoTimer} from '../lib/useIdleVideoTimer';
 import {DoubleChallenge} from './DoubleChallenge';
 import {UnionWinMoment} from './UnionWinMoment';
 import {DesignElements} from './DesignElements';
@@ -91,6 +94,7 @@ function ArcadeButton({
 }
 
 export function ReactionGame() {
+  const videoIdleEnabled=hasIdleVideo&&getSettings().idleEnabled;
   const [screen, setScreen] = useState<Screen>(()=>{const p=new URLSearchParams(location.search).get("screen");return isPreview && ["home","instructions","countdown","playing","result","leaderboard"].includes(p||"") ? p as Screen : "home";});
   const [player, setPlayer] = useState<Player>(isFrozen?{nationality:"AE",fullName:"ALEX EXAMPLE",email:"demo@example.invalid",phoneNumber:"500000000",countryCode:"+971"}:EMPTY_PLAYER);
   const [idle,setIdle]=useState(false);
@@ -123,7 +127,7 @@ export function ReactionGame() {
     schedule();window.addEventListener('storage',stored);document.addEventListener('visibilitychange',visible);return()=>{cancelled=true;clearTimeout(timer);window.removeEventListener('storage',stored);document.removeEventListener('visibilitychange',visible);};
   },[screen,idle]);
 
-  useEffect(()=>{if(isPreview||!getSettings().idleEnabled||!['home','leaderboard','instructions'].includes(screen))return;let timer:ReturnType<typeof setTimeout>;const wake=()=>{if(idle){setIdle(false);setPlayer(EMPTY_PLAYER);setScreen('home');}clearTimeout(timer);timer=setTimeout(()=>setIdle(true),getSettings().idleTimeout*1000);};timer=setTimeout(()=>setIdle(true),getSettings().idleTimeout*1000);window.addEventListener('pointerdown',wake);window.addEventListener('keydown',wake);return()=>{clearTimeout(timer);window.removeEventListener('pointerdown',wake);window.removeEventListener('keydown',wake);};},[screen,idle]);
+  useEffect(()=>{if(isPreview||hasIdleVideo||!getSettings().idleEnabled||!['home','leaderboard','instructions'].includes(screen))return;let timer:ReturnType<typeof setTimeout>;const wake=()=>{if(idle){setIdle(false);setPlayer(EMPTY_PLAYER);setScreen('home');}clearTimeout(timer);timer=setTimeout(()=>setIdle(true),getSettings().idleTimeout*1000);};timer=setTimeout(()=>setIdle(true),getSettings().idleTimeout*1000);window.addEventListener('pointerdown',wake);window.addEventListener('keydown',wake);return()=>{clearTimeout(timer);window.removeEventListener('pointerdown',wake);window.removeEventListener('keydown',wake);};},[screen,idle]);
   const goHome = () => {
     flowId.current++;
     resetRetrySequence();
@@ -140,7 +144,13 @@ export function ReactionGame() {
     window.scrollTo({top:0,behavior:"auto"});
   };
 
-  useEffect(()=>{if(isPreview||!getSettings().autoReturnEnabled||saving||pendingTime!==null)return;let timer:ReturnType<typeof setTimeout>;const timeout=(screen==='playing'?Math.max(getSettings().autoReturnSeconds,TARGET_TIME+10):getSettings().autoReturnSeconds)*1000;const reset=()=>{clearTimeout(timer);timer=setTimeout(()=>{if(!starting.current)goHome();else reset();},timeout);};reset();const events=['pointerdown','pointermove','keydown','input','wheel','scroll'] as const;for(const event of events)window.addEventListener(event,reset,{passive:true,capture:true});return()=>{clearTimeout(timer);for(const event of events)window.removeEventListener(event,reset,true);};},[screen,saving,pendingTime]);
+  useEffect(()=>{if(isPreview||idle||videoIdleEnabled||!getSettings().autoReturnEnabled||saving||pendingTime!==null)return;let timer:ReturnType<typeof setTimeout>;const timeout=(screen==='playing'?Math.max(getSettings().autoReturnSeconds,TARGET_TIME+10):getSettings().autoReturnSeconds)*1000;const reset=()=>{clearTimeout(timer);timer=setTimeout(()=>{if(!starting.current)goHome();else reset();},timeout);};reset();const events=['pointerdown','pointermove','keydown','input','wheel','scroll'] as const;for(const event of events)window.addEventListener(event,reset,{passive:true,capture:true});return()=>{clearTimeout(timer);for(const event of events)window.removeEventListener(event,reset,true);};},[screen,saving,pendingTime,idle,videoIdleEnabled]);
+  useIdleVideoTimer({
+    enabled:!isPreview&&videoIdleEnabled,
+    seconds:getSettings().idleTimeout,
+    onIdle:()=>setIdle(true),
+    onWake:()=>{if(saving||pendingTime!==null)setIdle(false);else goHome();},
+  });
   async function startGame(){if(starting.current&&screen!=='result')return;starting.current=true;setConnectionError('');setChallengeTimes([]);setScreen(getSettings().gameMode==='double'?'playing':'countdown');const currentFlow=flowId.current;try{await beginRound(player,loadedPublication.current);if(currentFlow!==flowId.current)return;setConnectionError('');}catch(e){if(currentFlow===flowId.current)setConnectionError(e instanceof Error?e.message:'Could not start round.');}finally{starting.current=false;}}
   async function syncBest(){
     if(saveInFlight.current||queuedTime.current===null)return;
@@ -160,7 +170,7 @@ export function ReactionGame() {
     if(bestTime.current===null||Math.abs(metric-TARGET_TIME)<Math.abs(bestTime.current-TARGET_TIME)){bestTime.current=metric;queuedTime.current=metric;queuedRounds.current=roundTimes;setPendingTime(metric);}
     void syncBest();
   }
-  useEffect(()=>{if(pendingTime===null||saving)return;const timer=setTimeout(()=>{void syncBest();},10000);return()=>clearTimeout(timer);},[pendingTime,saving]);
+  useEffect(()=>{if(pendingTime===null||saving||idle)return;const timer=setTimeout(()=>{void syncBest();},10000);return()=>clearTimeout(timer);},[pendingTime,saving,idle]);
 
   return (
     <div style={{"--game-primary":getSettings().primary,"--game-accent":getSettings().accent,"--game-bg":getSettings().background,"--panel-alpha":1-(getSettings().pageTransparency[screen]??25)/100,backgroundColor:getSettings().background,backgroundImage:getSettings().artwork ? `linear-gradient(#0004,#0004), url(${assetURL(getSettings().artwork)})` : undefined,backgroundSize:"cover",backgroundPosition:"center"} as React.CSSProperties} data-screen={screen} className="game relative flex min-h-screen w-full flex-col items-center overflow-hidden bg-white px-6 pb-10">
@@ -168,10 +178,11 @@ export function ReactionGame() {
       {connectionError&&<p role="alert" className="game-connection-error">{connectionError}</p>}
       {saving&&<p role="status">Saving score to {isHosted?'Cloudflare':'this browser'}…</p>}
       {pendingTime!==null&&!saving&&<button className={primaryBtn} onClick={()=>{void syncBest();}}>Retry saving score</button>}
-      {idle&&<IdlePresentation/>}
+      {idle&&(hasIdleVideo?<IdleVideo/>:<IdlePresentation/>)}
       <Decoration page={screen} name="headerLogo"><Logo page={screen}/></Decoration><Decoration page={screen} name="eventName"><p className="event-name"><CampaignText page={screen} name="eventName">{getSettings().eventName}</CampaignText></p></Decoration>
       {getSettings().decoration&&<Decoration page={screen} name="decoration"><img className="page-decoration" alt="Event decoration" src={assetURL(getSettings().decoration)}/></Decoration>}
       <div data-screen={screen} className="game-stage relative z-10 flex w-full max-w-md flex-1 flex-col items-center justify-center">
+        {!idle&&<>
         {screen === "home" && (
           <HomeScreen
             key={registrationEpoch}
@@ -202,6 +213,7 @@ export function ReactionGame() {
             onHome={goHome}
           />
         )}
+        </>}
       </div>
 
     </div>

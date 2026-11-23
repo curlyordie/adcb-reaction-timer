@@ -1,1 +1,1 @@
-{"compilerOptions":{"target":"ES2022","module":"ESNext","moduleResolution":"Bundler","strict":true,"skipLibCheck":true,"noEmit":true,"types":["@cloudflare/workers-types"]},"include":["cloudflare","functions","shared"]}
+{"compilerOptions":{"target":"ES2022","module":"ESNext","moduleResolution":"Bundler","strict":true,"skipLibCheck":true,"noEmit":true,"types":["@cloudflare/workers-types"],"resolveJsonModule":true},"include":["cloudflare","functions","shared"]}
