@@ -559,7 +559,7 @@ function ResultScreen({
       </div>
       </>}
 
-      <div className="flex w-full flex-col gap-2 rounded-xl border border-[#333f48]/30 bg-white p-4">
+      <div className="result-metrics flex w-full flex-col gap-2 rounded-xl border border-[#333f48]/30 bg-white p-4">
         <Row label="TARGET" value={TARGET_TIME.toFixed(3)} />
         <Row label={getSettings().gameMode==='double'?"WINNING RANGE":"DIFFERENCE"} value={getSettings().gameMode==='double'?`${(TARGET_TIME-TOLERANCE).toFixed(3)} – ${(TARGET_TIME+TOLERANCE).toFixed(3)}`:`${formatDiff(diff)} SECONDS`} highlight />
       </div>

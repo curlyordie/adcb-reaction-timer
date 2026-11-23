@@ -1,6 +1,7 @@
 import {useEffect,useRef,useState,type ReactNode} from 'react';
 
 export const previewScreens={
+ led:{label:'Event LED · 768 × 1024',width:768,height:1024},
  mobile:{label:'Mobile · 390 × 844',width:390,height:844},
  desktop:{label:'Desktop · 1920 × 1080',width:1920,height:1080},
  portrait:{label:'Event screen · 1080 × 1920',width:1080,height:1920},

@@ -30,29 +30,30 @@ const scenes:Record<string,Placement[]>={
 };
 
 export function exhibitionElements(format:DesignFormat):DesignElement[]{
- const landscape=format==='landscape';
- const ratio=landscape?1920/1080:1080/1920;
+ const landscape=format==='landscape',led=format==='led';
+ const ratio=led?768/1024:landscape?1920/1080:1080/1920;
  return Object.entries(scenes).flatMap(([page,placements])=>placements.map(([key,center,ground,size],layer)=>{
   const item=art[key];
   // A panoramic scene retains the same figure heights and brings the group
   // together below the controls, rather than enlarging portrait images.
-  const width=landscape?size*(1080/1920)**2:size;
-  const xCenter=landscape?50+(center-50)*.40:center;
+  const width=led?size*.32:landscape?size*(1080/1920)**2:size;
+  const xCenter=led?50+(center-50)*.6:landscape?50+(center-50)*.40:center;
+  const floor=led?96+(ground-96)*.35:ground;
   const round=(n:number)=>Math.round(n*1000)/1000;
-  return {id:`exhibition-v5-${landscape?'l':'p'}-${page}-${key}`,name:item.name,src:item.src,page,
-   x:round(xCenter-width*item.center),y:round(ground-width*ratio*item.bottom),width:round(width),rotation:0,opacity:1,layer};
+  return {id:`exhibition-v5-${led?'e':landscape?'l':'p'}-${page}-${key}`,name:item.name,src:item.src,page,
+   x:round(xCenter-width*item.center),y:round(floor-width*ratio*item.bottom),width:round(width),rotation:0,opacity:1,layer};
  }));
 }
 
 // Only pristine supplied elements change format automatically. Moved or uploaded
 // artwork keeps its exact editor coordinates.
 export function orientExhibitionElements(elements:DesignElement[],format:DesignFormat){
- const from=exhibitionElements(format==='portrait'?'landscape':'portrait');
+ const from=(['portrait','landscape','led'] as const).filter(value=>value!==format).flatMap(value=>exhibitionElements(value));
  const to=exhibitionElements(format);
  return elements.map(el=>{
   const index=from.findIndex(item=>item.id===el.id);
   if(index<0)return el;
   const original=from[index];
-  return Object.keys(original).every(key=>el[key as keyof DesignElement]===original[key as keyof DesignElement])?to[index]:el;
+  return Object.keys(original).every(key=>el[key as keyof DesignElement]===original[key as keyof DesignElement])?to[index%to.length]:el;
  });
 }

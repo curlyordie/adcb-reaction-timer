@@ -1,4 +1,5 @@
 import {idleVideoPublicationId} from '../shared/idle-video';
+import {readabilityPublicationId} from '../shared/readability';
 import {test,before,after} from 'node:test';
 import assert from 'node:assert/strict';
 import {createServer} from 'node:http';
@@ -117,6 +118,8 @@ test('hosted Union publication preserves existing layouts and timing settings, a
   const draft=structuredClone(old);draft.elements[0].y+=3;
   const raw=JSON.stringify(old);const created='2026-11-01T00:00:00Z';
   await db.batch([
+   // Isolate this earlier copy migration from the later LED layout publication.
+   db.prepare('INSERT INTO design_versions(id,settings,reason,created_at) VALUES(?,?,?,?)').bind(readabilityPublicationId,raw,'LED publication already applied',created),
    db.prepare('INSERT INTO design_versions(id,settings,reason,created_at) VALUES(?,?,?,?)').bind('adcb-exhibition-composition-v5',raw,'Existing composition',created),
    db.prepare('INSERT INTO design_versions(id,settings,reason,created_at) VALUES(?,?,?,?)').bind('custom-published',raw,'User adjustments',created),
    db.prepare('INSERT INTO studio VALUES(1,8,?,?)').bind(raw,'custom-published'),
