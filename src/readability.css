@@ -86,8 +86,6 @@
 .game-canvas[data-format=led] .game .leaderboard-screen [class*=grid-cols]{column-gap:10px;padding:10px;}
 .game-canvas[data-format=led] .game .countdown-number{font-size:calc(300px * var(--page-text-scale,1));}
 .game-canvas[data-format=led] .game .countdown-number::before{width:410px;height:410px;}
-.game-canvas[data-format=led] .game .keyboard-key[class]{font-size:calc(26px * var(--page-text-scale,1));}
-.game-canvas[data-format=led] .game .keyboard-actions .keyboard-key{font-size:calc(18px * var(--page-text-scale,1));}
 .game-canvas[data-format=led] .game[data-large-text=true] .timer-pair,
 .game-canvas[data-format=led] .game[data-large-text=true] .result-timers{grid-template-columns:minmax(0,1fr);}
 .game-canvas[data-format=led] .game[data-large-text=true]{padding-bottom:150px;}

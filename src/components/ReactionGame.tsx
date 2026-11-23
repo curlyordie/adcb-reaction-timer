@@ -15,7 +15,6 @@ import {isHosted,fetchVersion,hostedContent} from "@/lib/runtime";
 import {readStudio} from "@/lib/studio";
 import {assetURL} from "@/lib/assets";
 import {DigitalStopwatch} from "./DigitalStopwatch";
-import {TouchKeyboard} from "./TouchKeyboard";
 import {CampaignText,Decoration} from "./CampaignText";
 import {
   TARGET_TIME,
@@ -186,7 +185,6 @@ export function ReactionGame() {
         {screen === "home" && (
           <HomeScreen
             key={registrationEpoch}
-            keyboardEnabled={!idle}
             player={player}
             setPlayer={setPlayer}
             onStart={() => {resetRetrySequence();setScreen("instructions");}}
@@ -223,32 +221,23 @@ export function ReactionGame() {
 /* -------------------- HOME -------------------- */
 
 function HomeScreen({
-  keyboardEnabled=true,
   player,
   setPlayer,
   onStart,
   onLeaderboard,
 }: {
-  keyboardEnabled?:boolean;
   player: Player;
   setPlayer: (p: Player) => void;
   onStart: () => void;
   onLeaderboard: () => void;
 }) {
   const [consent, setConsent] = useState(false);
-  const [keyboardField,setKeyboardField]=useState<'fullName'|'email'|'phoneNumber'|null>(null);
-  const inputs=useRef<Record<string,HTMLInputElement|null>>({});
-  const openKeyboard=(field:'fullName'|'email'|'phoneNumber')=>{if(isFrozen||!keyboardEnabled)return;setKeyboardField(field);};
-
-  useEffect(()=>{if(!keyboardEnabled)setKeyboardField(null);},[keyboardEnabled]);
-  const closeKeyboard=()=>{if(keyboardField)inputs.current[keyboardField]?.blur();setKeyboardField(null);};
-  useEffect(()=>{let startedInside=false;const inside=(event:MouseEvent)=>event.composedPath().some(node=>node instanceof HTMLElement&&node.matches('.touch-keyboard,[data-registration-input]'));const pointer=(event:PointerEvent)=>{startedInside=inside(event);};const outside=(event:MouseEvent)=>{if(!startedInside&&!inside(event))setKeyboardField(null);};const escape=(event:KeyboardEvent)=>{if(event.key==='Escape')setKeyboardField(null);};document.addEventListener('pointerdown',pointer);document.addEventListener('click',outside);window.addEventListener('keydown',escape);return()=>{document.removeEventListener('pointerdown',pointer);document.removeEventListener('click',outside);window.removeEventListener('keydown',escape);};},[]);
 
   const emailRequired=isHosted&&hostedContent?.eventId==='jiu-jitsu';
   const valid = consent && player.fullName.trim().length > 1 && validEmail(player.email) && /^[+\d][\d ()-]{6,19}$/.test(player.phoneNumber.trim()) && (!emailRequired||validNationality(player.nationality));
 
   return (
-    <div className="home-screen flex w-full flex-col items-center gap-8" style={{paddingBottom:keyboardField?360:undefined}}>
+    <div className="home-screen flex w-full flex-col items-center gap-8">
       <div className="text-center">
         <h1 className="text-display home-headline font-black leading-[1.05]" style={{ color: BRAND }}>
           <CampaignText page="home" name="title">{getSettings().title}</CampaignText>
@@ -266,17 +255,15 @@ function HomeScreen({
           <Field
             label="FULL NAME"
             required
-            inputRef={el=>{inputs.current.fullName=el;}}
-            onFocus={()=>openKeyboard('fullName')}
             maxLength={100}
             value={player.fullName}
             onChange={(v) => setPlayer({ ...player, fullName: v })}
             placeholder="ENTER FULL NAME"
             autoCapitalize="characters"
           />
-          {<><Field label="EMAIL ADDRESS" type="email" required maxLength={254} autoCapitalize="none" value={player.email} inputRef={el=>{inputs.current.email=el;}} onFocus={()=>openKeyboard('email')} onChange={email=>setPlayer({...player,email})} placeholder="ENTER EMAIL ADDRESS"/>{player.email&&!validEmail(player.email)&&<p role="alert" className="text-sm text-red-700">Enter a valid email address, such as name@example.com.</p>}</>}
-          <Field label="PHONE NUMBER" type="tel" required maxLength={20} value={player.phoneNumber} inputRef={el=>{inputs.current.phoneNumber=el;}} onFocus={()=>openKeyboard('phoneNumber')} onChange={phoneNumber=>setPlayer({...player,phoneNumber})} placeholder="ENTER PHONE NUMBER"/>
-          {emailRequired&&<NationalitySelect value={player.nationality} onChange={nationality=>setPlayer({...player,nationality})} onOpen={closeKeyboard} disabled={isFrozen||!keyboardEnabled}/>}
+          {<><Field label="EMAIL ADDRESS" type="email" required maxLength={254} autoCapitalize="none" value={player.email} onChange={email=>setPlayer({...player,email})} placeholder="ENTER EMAIL ADDRESS"/>{player.email&&!validEmail(player.email)&&<p role="alert" className="text-sm text-red-700">Enter a valid email address, such as name@example.com.</p>}</>}
+          <Field label="PHONE NUMBER" type="tel" required maxLength={20} value={player.phoneNumber} onChange={phoneNumber=>setPlayer({...player,phoneNumber})} placeholder="ENTER PHONE NUMBER"/>
+          {emailRequired&&<NationalitySelect value={player.nationality} onChange={nationality=>setPlayer({...player,nationality})} disabled={isFrozen}/>}
           <label className="registration-consent"><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)}/><span>I agree to my name, email address, phone number and score being stored for this event{emailRequired?' together with my nationality':''}. Only my name and score appear on the public leaderboard.</span></label>
         </div>
       </div>
@@ -289,7 +276,6 @@ function HomeScreen({
           {<CampaignText page="home" name="leaderboard">{copy("leaderboard")}</CampaignText>}
         </button></Decoration>
       </div>
-      {keyboardField&&<TouchKeyboard field={keyboardField} value={player[keyboardField]} input={inputs.current[keyboardField]} onChange={value=>setPlayer({...player,[keyboardField]:value})} onClose={closeKeyboard} onNext={()=>{if(emailRequired&&keyboardField==='fullName'){setKeyboardField('email');inputs.current.email?.focus();}else if(keyboardField==='email'){setKeyboardField('phoneNumber');inputs.current.phoneNumber?.focus();}else closeKeyboard();}}/>}
     </div>
   );
 }
@@ -301,8 +287,6 @@ function Field({
   placeholder,
   type = "text",
   autoCapitalize,
-  inputRef,
-  onFocus,
   maxLength,
   required,
 }: {
@@ -312,8 +296,6 @@ function Field({
   placeholder: string;
   type?: string;
   autoCapitalize?: string;
-  inputRef?:(input:HTMLInputElement|null)=>void;
-  onFocus?:()=>void;
   maxLength?:number;
   required?:boolean;
 }) {
@@ -325,12 +307,8 @@ function Field({
       <input
         type={type}
         required={required}
-        ref={inputRef}
         data-registration-input={label}
         aria-label={label}
-        onFocus={onFocus}
-        onClick={onFocus}
-        inputMode="none"
         maxLength={maxLength}
         spellCheck={false}
         value={value}
@@ -627,7 +605,7 @@ function IdlePresentation(){
  <Decoration page={page} name="headerLogo"><Logo page={page}/></Decoration><Decoration page={page} name="eventName"><p className="event-name">{settings.eventName}</p></Decoration>
  {settings.decoration&&<Decoration page={page} name="decoration"><img className="page-decoration" src={assetURL(settings.decoration)} alt="Event decoration"/></Decoration>}
  <div className="idle-scene-stage" key={page}>
- {page==='home'&&<HomeScreen keyboardEnabled={false} player={{...EMPTY_PLAYER,fullName:'ALEX EXAMPLE',email:'demo@example.invalid',nationality:'AE'}} setPlayer={noop} onStart={noop} onLeaderboard={noop}/>}
+ {page==='home'&&<HomeScreen player={{...EMPTY_PLAYER,fullName:'ALEX EXAMPLE',email:'demo@example.invalid',nationality:'AE'}} setPlayer={noop} onStart={noop} onLeaderboard={noop}/>}
  {page==='countdown'&&<CountdownScreen onDone={noop}/>}
  {page==='playing'&&<div className="playing-screen"><DigitalStopwatch time={Math.max(0,TARGET_TIME-2)}/><ArcadeButton onClick={noop} label={copy('stop')}/></div>}
  {page==='result'&&<ResultScreen time={TARGET_TIME} roundTimes={[TARGET_TIME,TARGET_TIME]} onRetry={noop} onLeaderboard={noop} onHome={noop}/>}

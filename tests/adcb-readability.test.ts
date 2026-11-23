@@ -78,7 +78,7 @@ test('every page uses readable physical pixels on the 768 × 1024 LED, including
  }finally{await context.close();}
 });
 
-test('existing local settings receive the readable layout once, keep history and scores, and allow keyboard entry at native size',async()=>{
+test('existing local settings keep history and scores, and physical-keyboard registration keeps the native readable layout',async()=>{
  const context=await browser.newContext({viewport:{width:768,height:1024}});
  try{
   const page=await context.newPage();await page.goto(url);
@@ -94,13 +94,17 @@ test('existing local settings receive the readable layout once, keep history and
   assert.equal(state.revision,8);assert.equal(state.versions.at(-1).id,readabilityPublicationId);assert.deepEqual(state.versions[0].settings,old);
   assert.equal(state.draft.eventName,'Private draft');assert.equal(state.versions.at(-1).settings.elements.length,old.elements.length);
   assert.deepEqual(state.draft.elements.at(-1),old.elements.at(-1));assert.deepEqual(await page.evaluate(()=>JSON.parse(localStorage.getItem('adcb-records')!)),records);
+  await page.getByPlaceholder('ENTER FULL NAME').click();
   for(const [placeholder,value] of [['ENTER FULL NAME','LED Guest'],['ENTER EMAIL ADDRESS','led@example.com'],['ENTER PHONE NUMBER','0501234567']]){
-   const input=page.getByPlaceholder(placeholder);await input.click();await page.getByRole('region',{name:'On-screen keyboard'}).waitFor();
-   await readable(page,{'.keyboard-key':18,'.touch-keyboard output':18,'.registration-field input':22});
-   const field=await input.boundingBox();const keyboard=await page.locator('.touch-keyboard').boundingBox();assert.ok(field&&keyboard&&field.y+field.height<keyboard.y,'Keyboard must not cover the active input');
-   await input.fill(value);await page.getByRole('button',{name:'Close keyboard',exact:true}).click();
+   const input=page.getByPlaceholder(placeholder);assert.equal(await input.evaluate(el=>el===document.activeElement),true,'Tab must move between registration fields');
+   await page.keyboard.type(value);assert.equal(await input.inputValue(),value);
+   assert.equal(await page.getByRole('region',{name:'On-screen keyboard'}).count(),0,'Focusing and typing must not open an app keyboard');
+   await readable(page,{'.registration-field input':22,'.home-actions button':24});
+   await page.keyboard.press('Tab');
   }
-  await page.getByRole('checkbox').check();await page.getByRole('button',{name:'START GAME',exact:true}).click();await page.getByRole('button',{name:'START GAME',exact:true}).click();
+  assert.equal(await page.getByRole('checkbox').evaluate(el=>el===document.activeElement),true);await page.keyboard.press('Space');await page.keyboard.press('Tab');
+  assert.equal(await page.getByRole('button',{name:'START GAME',exact:true}).evaluate(el=>el===document.activeElement),true);await page.keyboard.press('Enter');
+  await page.getByRole('heading',{name:'HOW TO PLAY',exact:true}).waitFor();await page.getByRole('button',{name:'START GAME',exact:true}).click();
   await readable(page,{'.timer-action:not(:disabled)':26,'.timer-card>.round-tribute':22});
   await page.goto(url);await page.getByRole('button',{name:'VIEW UNION CHAMPIONS',exact:true}).click();await page.getByText('EXHIBITION GUEST 0',{exact:true}).waitFor();
   await readable(page,{'.leaderboard-scroll>div:first-child .text-sm':22,'.leaderboard-scroll>div:first-child .text-mono':18,'.leaderboard-screen button':24});
