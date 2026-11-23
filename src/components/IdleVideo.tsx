@@ -1,10 +1,10 @@
-import {useEffect,useRef,useState} from 'react';
+import {useEffect,useRef,useState,type CSSProperties} from 'react';
 import {createPortal} from 'react-dom';
 import {loadIdleVideo} from '../lib/idle-video';
 import {assetURL} from '../lib/assets';
-import {copy} from '../lib/settings';
+import {copy,getSettings} from '../lib/settings';
 
-export function IdleVideo(){
+export function IdleVideo({page}:{page:string}){
  const video=useRef<HTMLVideoElement>(null);
  const [src,setSrc]=useState('');
  const [failed,setFailed]=useState(false);
@@ -24,14 +24,14 @@ export function IdleVideo(){
   update();document.addEventListener('visibilitychange',update);
   return()=>{player.pause();document.removeEventListener('visibilitychange',update);};
  },[src]);
- return createPortal(<div className="idle-video-cover" role="region" aria-label="AAIHEX idle video">
-  {src&&!failed&&<video ref={video} src={src} autoPlay muted loop playsInline preload="auto" disablePictureInPicture onError={()=>setFailed(true)} aria-label="AAIHEX 2026 exhibition video"/>}
+ return createPortal(<div className="idle-video-cover" style={{'--page-text-scale':(getSettings().pageTextScale[page]??100)/100} as CSSProperties} role="region" aria-label="AAIHEX idle video">
+  {src&&!failed&&<video ref={video} src={src} style={{objectFit:getSettings().idleVideoFit}} autoPlay muted loop playsInline preload="auto" disablePictureInPicture onError={()=>setFailed(true)} aria-label="AAIHEX 2026 exhibition video"/>}
   {failed&&<img className="idle-video-fallback" src={assetURL('/brand/adcb-logo-66a2316b71.png')} alt="ADCB"/>}
   <p className="idle-video-prompt">{copy('idleEnter')||'Touch to play'}</p>
  </div>,document.body);
 }
 
-export function IdleVideoPreview(){
+export function IdleVideoPreview({fit}:{fit:'contain'|'fill'}){
  const [src,setSrc]=useState('');
  const [error,setError]=useState('');
  const [loading,setLoading]=useState(false);
@@ -42,7 +42,7 @@ export function IdleVideoPreview(){
  }
  return <div className="idle-video-preview">
   {!src&&<button disabled={loading} onClick={()=>void preview()}>{loading?'Preparing preview…':'Preview bundled video'}</button>}
-  {src&&<video src={src} autoPlay muted loop playsInline controls preload="auto" aria-label="Bundled idle video preview"/>}
+  {src&&<video src={src} style={{objectFit:fit}} autoPlay muted loop playsInline controls preload="auto" aria-label="Bundled idle video preview"/>}
   {error&&<p role="alert">{error}</p>}
  </div>;
 }

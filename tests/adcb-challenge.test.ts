@@ -38,14 +38,15 @@ test('ADCB hosted D1: event, authentication, two-stage scores, retries, publicat
  const png=Uint8Array.from(Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a7S8AAAAASUVORK5CYII=','base64'));
  const upload=await handleApi(new Request('https://adcb.example/api/admin/assets',{method:'POST',headers:{Origin:'https://adcb.example',Cookie:cookie,'Content-Type':'image/png'},body:png}),env);assert.equal(upload.status,200);const {ref}=await upload.json() as any;
  assert.equal((await req(ref.replace('/api/',''),undefined,false)).status,404);
- const draft=structuredClone(snapshot.draft);draft.designFormat='landscape';draft.library=[{id:'uploaded',name:'Uploaded illustration',src:ref}];draft.elements.push({id:'art',name:'Custom art',src:ref,page:'home',x:15,y:65,width:18,rotation:10,opacity:.8,layer:3});
+ const draft=structuredClone(snapshot.draft);draft.pageTextScale={home:125,playing:150};draft.idleVideoFit='contain';draft.designFormat='landscape';draft.library=[{id:'uploaded',name:'Uploaded illustration',src:ref}];draft.elements.push({id:'art',name:'Custom art',src:ref,page:'home',x:15,y:65,width:18,rotation:10,opacity:.8,layer:3});
  let response=await req('admin/draft',{eventId:'aaihex-2026',revision:snapshot.revision,draft});assert.equal(response.status,200);snapshot=await response.json();
  assert.equal((await req('admin/draft',{eventId:'aaihex-2026',revision:0,draft})).status,409);
  response=await req('admin/publish',{eventId:'aaihex-2026',revision:snapshot.revision,draft,reason:'Publish illustration'});assert.equal(response.status,200);snapshot=await response.json();assert.equal(snapshot.draft.elements.at(-1).src,ref);
  const artwork=await req(ref.replace('/api/',''),undefined,false);assert.equal(artwork.status,200);assert.match(artwork.headers.get('cache-control')!,/immutable/);
- const published:any=await (await req('public/content')).json();assert.equal(published.settings.library[0].src,ref);assert.equal(published.settings.designFormat,'landscape');
+ const published:any=await (await req('public/content')).json();assert.equal(published.settings.library[0].src,ref);assert.equal(published.settings.designFormat,'landscape');assert.deepEqual(published.settings.pageTextScale,{home:125,playing:150});assert.equal(published.settings.idleVideoFit,'contain');
  const reports:any=await (await req('admin/event-records?event=aaihex-2026')).json();assert.equal(reports.records.length,2);assert.ok(reports.records.every((r:any)=>Array.isArray(r.roundTimes)));
  assert.equal((await req('admin/snapshot?event=f1')).status,400);assert.equal((await req('admin/snapshot?event=jiu-jitsu')).status,400);
+ assert.equal((await req('admin/draft',{eventId:'aaihex-2026',revision:snapshot.revision,draft:{...draft,pageTextScale:{home:999}}})).status,400);
  const bad={...draft,elements:[{...draft.elements[0],src:'/api/art/00000000-0000-0000-0000-000000000000'}]};assert.equal((await req('admin/draft',{eventId:'aaihex-2026',revision:snapshot.revision,draft:bad})).status,400);
  assert.equal((await req('admin/logout',{})).status,200);assert.equal((await req('admin/snapshot')).status,401);
  }finally{await mf.dispose();}

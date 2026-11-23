@@ -27,9 +27,17 @@ The build checks frontend/backend TypeScript, creates `dist`, and regenerates `a
 
 Tests need Chromium at `/usr/bin/chromium`, or set `CHROMIUM_PATH`. The ADCB suites cover gameplay boundaries, independent stages, failure/retry/best score, editor drag/layout persistence, uploads/backups, responsive/offline rendering, D1/authentication/publication, hosted browser behavior, and failed-score-save recovery. Historical FAB-specific test files remain in `tests` as reference and are not the current product's test entrypoints. The immutable original project and its original tests also remain outside this checkout at `/workspace/reference/fab_reaction_timer-main` in this onboarding machine.
 
+## Page-wide text sizes
+
+In **Admin → Page editor**, select a page and use **All text on this page**. The slider and A− / A+ buttons adjust every heading, label, input, button, timer number and Arabic caption together from 75% to 200%. **Apply text size to all pages** copies the current percentage to every game page. **Reset page text size** restores 100% for the selected page.
+
+The percentage multiplies existing individual text sizes: a 64-pixel headline at 125% becomes 80 design pixels. Resetting the page multiplier keeps that individual 64-pixel setting. Artwork coordinates and logo dimensions are preserved. Above 125%, timer cards stack to keep the full numbers visible. Use the live preview to check wrapping, then Save draft or Publish design as usual. Older saved designs default to 100%; adding this control does not resize them automatically.
+
 ## Idle video and data use
 
-After 60 seconds with no pointer, keyboard, touch, input or scroll activity, the game shows the supplied AAIHEX / ADCB × MITE LED video. It loops silently, fits the display without cropping, and stops on a touch or key press. An abandoned game returns to a blank registration form. An unsaved result stays available for retrying its save.
+After 60 seconds with no pointer, keyboard, touch, input or scroll activity, the game shows the supplied AAIHEX / ADCB × MITE LED video. It loops silently, fills the display without cropping, and stops on a touch or key press. An abandoned game returns to a blank registration form. An unsaved result stays available for retrying its save.
+
+Admin → Idle video → **Idle video sizing** selects **Fill screen** (the default, stretching the complete frame to remove player side bars) or **Keep proportions** (preserves the original aspect ratio and can leave bars). This changes playback layout using the same cached file.
 
 The 62.4-second H.264 video is included at `public/media/adcb-aaihex-idle-950f18fa3fc3.mp4`: **2.61 MiB**, reduced from 43.5 MiB while retaining 768 × 1024 pixels and 24 fps. The audio track is omitted because idle autoplay is muted. The original download is not deployed.
 

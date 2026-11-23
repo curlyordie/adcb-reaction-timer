@@ -83,7 +83,7 @@ function ArcadeButton({
         style={{
           width: "min(calc(var(--canvas-vw) * 70), 240px)",
           height: "min(calc(var(--canvas-vw) * 70), 240px)",
-          fontSize: "clamp(1.1rem, calc(var(--canvas-vw) * 5), 1.6rem)",
+          fontSize: "calc(clamp(1.1rem, calc(var(--canvas-vw) * 5), 1.6rem) * var(--page-text-scale, 1))",
           lineHeight: 1.05,
         }}
       >
@@ -173,12 +173,12 @@ export function ReactionGame() {
   useEffect(()=>{if(pendingTime===null||saving||idle)return;const timer=setTimeout(()=>{void syncBest();},10000);return()=>clearTimeout(timer);},[pendingTime,saving,idle]);
 
   return (
-    <div style={{"--game-primary":getSettings().primary,"--game-accent":getSettings().accent,"--game-bg":getSettings().background,"--panel-alpha":1-(getSettings().pageTransparency[screen]??25)/100,backgroundColor:getSettings().background,backgroundImage:getSettings().artwork ? `linear-gradient(#0004,#0004), url(${assetURL(getSettings().artwork)})` : undefined,backgroundSize:"cover",backgroundPosition:"center"} as React.CSSProperties} data-screen={screen} className="game relative flex min-h-screen w-full flex-col items-center overflow-hidden bg-white px-6 pb-10">
+    <div style={{"--page-text-scale":(getSettings().pageTextScale[screen]??100)/100,"--game-primary":getSettings().primary,"--game-accent":getSettings().accent,"--game-bg":getSettings().background,"--panel-alpha":1-(getSettings().pageTransparency[screen]??25)/100,backgroundColor:getSettings().background,backgroundImage:getSettings().artwork ? `linear-gradient(#0004,#0004), url(${assetURL(getSettings().artwork)})` : undefined,backgroundSize:"cover",backgroundPosition:"center"} as React.CSSProperties} data-screen={screen} data-large-text={(getSettings().pageTextScale[screen]??100)>125?'true':undefined} className="game relative flex min-h-screen w-full flex-col items-center overflow-hidden bg-white px-6 pb-10">
       <DesignElements page={screen}/>
       {connectionError&&<p role="alert" className="game-connection-error">{connectionError}</p>}
       {saving&&<p role="status">Saving score to {isHosted?'Cloudflare':'this browser'}…</p>}
       {pendingTime!==null&&!saving&&<button className={primaryBtn} onClick={()=>{void syncBest();}}>Retry saving score</button>}
-      {idle&&(hasIdleVideo?<IdleVideo/>:<IdlePresentation/>)}
+      {idle&&(hasIdleVideo?<IdleVideo page={screen}/>:<IdlePresentation/>)}
       <Decoration page={screen} name="headerLogo"><Logo page={screen}/></Decoration><Decoration page={screen} name="eventName"><p className="event-name"><CampaignText page={screen} name="eventName">{getSettings().eventName}</CampaignText></p></Decoration>
       {getSettings().decoration&&<Decoration page={screen} name="decoration"><img className="page-decoration" alt="Event decoration" src={assetURL(getSettings().decoration)}/></Decoration>}
       <div data-screen={screen} className="game-stage relative z-10 flex w-full max-w-md flex-1 flex-col items-center justify-center">

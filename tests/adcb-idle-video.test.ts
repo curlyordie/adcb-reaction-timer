@@ -11,7 +11,7 @@ import {createHash} from 'node:crypto';
 async function fixture(useBundled=false){
  const mediaPath=useBundled?idleVideo.src!:'/media/idle-test.mp4';
  const bytes=await readFile(useBundled?'public'+mediaPath:'tests/fixtures/idle-test.mp4');
- const counts:Record<string,number>={};let denyVideo=false;
+ const counts:Record<string,number>={};let denyVideo=false,videoFit:'fill'|'contain'='fill';
  const server=createServer(async(req,res)=>{
   const path=new URL(req.url!,'http://localhost').pathname;
   counts[path]=(counts[path]||0)+1;
@@ -21,7 +21,7 @@ async function fixture(useBundled=false){
   }
   if(path.startsWith('/api/')){
    res.setHeader('Content-Type','application/json');res.setHeader('Cache-Control','no-store');
-   if(path==='/api/public/content'){res.end(JSON.stringify({eventId:'aaihex-2026',versionId:'idle-test',settings:{...baseline,idleEnabled:true,idleTimeout:60}}));return;}
+   if(path==='/api/public/content'){res.end(JSON.stringify({eventId:'aaihex-2026',versionId:'idle-test',settings:{...baseline,idleEnabled:true,idleTimeout:60,idleVideoFit:videoFit}}));return;}
    if(path==='/api/public/version'){res.end(JSON.stringify({versionId:'idle-test'}));return;}
    if(path==='/api/public/start'){res.end(JSON.stringify({id:'test-round',token:'test-token'}));return;}
    if(path==='/api/public/complete'){res.writeHead(503);res.end(JSON.stringify({error:'Test score save unavailable'}));return;}
@@ -44,7 +44,7 @@ async function fixture(useBundled=false){
  const page=await context.newPage();
  await page.clock.install({time:new Date('2026-11-23T00:00:00Z')});
  await page.clock.pauseAt(new Date('2026-11-23T00:00:01Z'));
- return {page,context,counts,mediaPath,url:`http://127.0.0.1:${address.port}`,blockVideo:()=>{denyVideo=true;},close:async()=>{await browser.close();await new Promise<void>(done=>server.close(()=>done()));}};
+ return {page,context,counts,mediaPath,url:`http://127.0.0.1:${address.port}`,blockVideo:()=>{denyVideo=true;},setVideoFit:(value:'fill'|'contain')=>{videoFit=value;},close:async()=>{await browser.close();await new Promise<void>(done=>server.close(()=>done()));}};
 }
 async function waitForPlayback(page:Page){
  const video=page.getByRole('region',{name:'AAIHEX idle video'}).locator('video');
@@ -73,6 +73,13 @@ test('one-minute idle video loops from a local copy, makes no idle API calls, an
   await f.page.clock.fastForward(1);const video=await waitForPlayback(f.page);
   assert.equal(f.counts['/media/idle-test.mp4'],1);
   assert.deepEqual(await video.evaluate(v=>({local:v.currentSrc.startsWith('blob:'),loop:v.loop,muted:v.muted,inline:v.playsInline})),{local:true,loop:true,muted:true,inline:true});
+  await f.page.setViewportSize({width:900,height:1024});
+  assert.deepEqual(await video.evaluate(v=>{const r=v.getBoundingClientRect();return {fit:getComputedStyle(v).objectFit,x:r.x,y:r.y,width:r.width,height:r.height};}),{fit:'fill',x:0,y:0,width:900,height:1024});
+  const screenshot=await f.page.screenshot();
+  const corner=await f.page.evaluate(async source=>{
+   const image=new Image();image.src=source;await image.decode();const canvas=document.createElement('canvas');canvas.width=image.width;canvas.height=image.height;const ctx=canvas.getContext('2d')!;ctx.drawImage(image,0,0);return Array.from(ctx.getImageData(5,5,1,1).data);
+  },'data:image/png;base64,'+screenshot.toString('base64'));
+  assert.ok(corner[0]>20&&corner[1]>20&&corner[2]>20,'The mismatched display aspect ratio must not leave black player bars');
   await video.evaluate(player=>{
    (window as any).__idleLoops=0;
    player.addEventListener('seeking',()=>{(window as any).__idleLoops+=1;});
@@ -85,8 +92,9 @@ test('one-minute idle video loops from a local copy, makes no idle API calls, an
   assert.equal(await f.page.getByPlaceholder('ENTER FULL NAME').inputValue(),'');
   await f.page.clock.fastForward(60000);await waitForPlayback(f.page);assert.equal(f.counts['/media/idle-test.mp4'],1);
   await f.page.mouse.click(384,512);await f.page.getByPlaceholder('ENTER FULL NAME').waitFor();
-  f.blockVideo();await f.page.reload();await f.page.getByPlaceholder('ENTER FULL NAME').waitFor();
-  await f.page.clock.fastForward(60000);await waitForPlayback(f.page);
+  f.blockVideo();f.setVideoFit('contain');await f.page.reload();await f.page.getByPlaceholder('ENTER FULL NAME').waitFor();
+  await f.page.clock.fastForward(60000);const proportional=await waitForPlayback(f.page);
+  assert.equal(await proportional.evaluate(v=>getComputedStyle(v).objectFit),'contain');
   assert.equal(f.counts['/media/idle-test.mp4'],1,'A reload must use Cache Storage rather than download again');
  }finally{await f.close();}
 });

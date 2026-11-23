@@ -10,7 +10,7 @@ export function wireArtworkCanvas(doc:Document,current:()=>Settings,selected:str
  doc.addEventListener('pointerdown',event=>{
   const target=(event.target as HTMLElement).closest<HTMLElement>('[data-design-id]');if(!target)return;
   event.preventDefault();event.stopImmediatePropagation();try{target.setPointerCapture(event.pointerId);}catch{/* Pointer may already have ended. */}const id=target.dataset.designId!;onSelect(id);doc.querySelectorAll('[data-selected-art]').forEach(el=>el.removeAttribute('data-selected-art'));target.setAttribute('data-selected-art','true');
-  const el=current().elements.find(el=>el.id===id);const canvas=doc.querySelector('.game');if(!el||!canvas)return;
+  const el=current().elements.find(el=>el.id===id);const canvas=target.closest('.exhibition-scene')||doc.querySelector('.game');if(!el||!canvas)return;
   const box=canvas.getBoundingClientRect(),startX=event.clientX,startY=event.clientY;const resizing=(event.target as HTMLElement).classList.contains('element-resize');let patch:Partial<DesignElement>={};
   const move=(e:PointerEvent)=>{const dx=(e.clientX-startX)/box.width*100,dy=(e.clientY-startY)/box.height*100;patch=resizing?{width:Math.max(2,Math.min(100-el.x,el.width+dx))}:{x:Math.max(0,Math.min(100-el.width,el.x+dx)),y:Math.max(0,Math.min(98,el.y+dy))};if(patch.width!==undefined)target.style.width=patch.width+'%';if(patch.x!==undefined)target.style.left=patch.x+'%';if(patch.y!==undefined)target.style.top=patch.y+'%';};
   const end=()=>{doc.removeEventListener('pointermove',move);doc.removeEventListener('pointerup',end);doc.removeEventListener('pointercancel',end);if(Object.keys(patch).length){const s=current();onChange({...s,elements:s.elements.map(item=>item.id===id?{...item,...patch}:item)});}};
