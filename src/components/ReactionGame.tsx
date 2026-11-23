@@ -261,7 +261,7 @@ function HomeScreen({
             placeholder="ENTER FULL NAME"
             autoCapitalize="characters"
           />
-          {<><Field label="EMAIL ADDRESS" type="email" required maxLength={254} autoCapitalize="none" value={player.email} onChange={email=>setPlayer({...player,email})} placeholder="ENTER EMAIL ADDRESS"/>{player.email&&!validEmail(player.email)&&<p role="alert" className="text-sm text-red-700">Enter a valid email address, such as name@example.com.</p>}</>}
+          <div className="registration-email"><Field label="EMAIL ADDRESS" type="email" required maxLength={254} autoCapitalize="none" value={player.email} onChange={email=>setPlayer({...player,email})} placeholder="ENTER EMAIL ADDRESS"/>{player.email&&!validEmail(player.email)&&<p role="alert" className="text-sm text-red-700">Enter a valid email address, such as name@example.com.</p>}</div>
           <Field label="PHONE NUMBER" type="tel" required maxLength={20} value={player.phoneNumber} onChange={phoneNumber=>setPlayer({...player,phoneNumber})} placeholder="ENTER PHONE NUMBER"/>
           {emailRequired&&<NationalitySelect value={player.nationality} onChange={nationality=>setPlayer({...player,nationality})} disabled={isFrozen}/>}
           <label className="registration-consent"><input type="checkbox" checked={consent} onChange={e=>setConsent(e.target.checked)}/><span>I agree to my name, email address, phone number and score being stored for this event{emailRequired?' together with my nationality':''}. Only my name and score appear on the public leaderboard.</span></label>
@@ -529,12 +529,12 @@ function ResultScreen({
 
       {getSettings().gameMode==='double'&&win?<UnionWinMoment roundTimes={roundTimes}/>:<>
       {getSettings().gameMode==='double'&&<div className="result-timers" aria-label="Challenge results">{[0,1].map(index=><article key={index}><span>ROUND 0{index+1}</span><DigitalStopwatch time={roundTimes[index]??0}/><strong>{roundTimes[index]===undefined?'NOT PLAYED':passes(roundTimes[index],TARGET_TIME,TOLERANCE)?'PASS':'MISSED'}</strong></article>)}</div>}
-      <div
+      {getSettings().gameMode==='single'&&<div
         className="text-mono result-number font-black leading-none tabular-nums"
         style={{ color: BRAND }}
       >
-        {getSettings().gameMode==='double'?'TRY AGAIN':formatTime(time)}
-      </div>
+        {formatTime(time)}
+      </div>}
       </>}
 
       <div className="result-metrics flex w-full flex-col gap-2 rounded-xl border border-[#333f48]/30 bg-white p-4">
@@ -542,7 +542,7 @@ function ResultScreen({
         <Row label={getSettings().gameMode==='double'?"WINNING RANGE":"DIFFERENCE"} value={getSettings().gameMode==='double'?`${(TARGET_TIME-TOLERANCE).toFixed(3)} – ${(TARGET_TIME+TOLERANCE).toFixed(3)}`:`${formatDiff(diff)} SECONDS`} highlight />
       </div>
 
-      <div className="flex w-full flex-col gap-2">
+      <div className="result-actions flex w-full flex-col gap-2">
         <button onClick={onRetry} className={primaryBtn}>RETRY</button>
         <Decoration page="result" name="leaderboardLink"><button disabled={pending} onClick={onLeaderboard} className={primaryBtn}>
           {<CampaignText page="result" name="leaderboard">{copy("leaderboard")}</CampaignText>}

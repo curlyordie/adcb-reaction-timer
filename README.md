@@ -29,7 +29,7 @@ Tests need Chromium at `/usr/bin/chromium`, or set `CHROMIUM_PATH`. The ADCB sui
 
 ## Event screen readability
 
-The published event layout uses the display's native **768 × 1024** canvas. It fits registration, all four instruction steps, both timers, winning and missed results, and leaderboard controls without reducing the entire page to fit a taller portrait design. Body copy uses 22–24 px, small labels at least 18 px, instruction numbers 24 px, timer figures 88 px, and result target/range figures 32 px. Target and range sit alongside each other; all text and buttons remain centred. The Page editor opens the matching Event LED preview by default.
+The published event layout uses the display's native **768 × 1024** canvas. It fits registration, all four instruction steps, both timers, winning and missed results, and leaderboard controls without reducing the entire page to fit a taller portrait design. Body copy uses 20 px with 1.5–1.55 line spacing, supporting labels 16–18 px, timer figures 80 px, and result target/range figures 28 px. Email and phone share a row, instructions share one continuous panel, and the results use a lighter two-column action row. All text and buttons remain centred. The supplied illustration scenes render 75–100% larger independently of text sizing, with space reserved below the content. The editor accounts for this scene scale when dragging and resizing. The Page editor opens the matching Event LED preview by default.
 
 Registration uses the event's physical keyboard. Name, email and phone accept normal typing; Tab moves between fields, Space checks consent, and Enter activates the focused button. The game does not display a pop-up keyboard or reserve space for one.
 
